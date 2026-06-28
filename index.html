@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@connexis - Universal Realtime Client Docs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button class="mobile-nav-toggle" id="menuToggle">☰</button>
+
+  <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo-container">
+        <div class="logo-icon">C</div>
+        <span class="logo-text">@connexis</span>
+      </div>
+      
+      <input type="text" class="search-box" id="searchBox" placeholder="Search docs...">
+      
+      <ul class="nav-links">
+        <li><a href="#intro" class="active">Introduction</a></li>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#transports">Transports</a></li>
+        <li><a href="#policies">Connection Policies</a></li>
+        <li><a href="#coordination">Multi-Tab Coordination</a></li>
+        <li><a href="#middlewares">Middlewares</a></li>
+        <li><a href="#react">React Wrapper</a></li>
+        <li><a href="#benchmarks">Benchmarks & Stress Tests</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <section id="intro">
+        <span class="badge">v1.0.0</span>
+        <span class="badge purple">MIT License</span>
+        <h1>Universal Realtime Connection Manager</h1>
+        <p>
+          <strong>@connexis</strong> is a production-ready, framework-agnostic realtime client library designed to act as a connection manager for browser realtime transports.
+        </p>
+        <p>
+          Instead of wrapping WebSockets or SSE directly, `@connexis` pools connections, orchestrates multi-tab leader elections using <code>SharedWorker</code> and <code>BroadcastChannel</code> fallbacks, deduplicates identical subscriptions onto shared sockets (using Hybrid policies), and provides developer utilities like Koa-style middlewares and reactive framework hooks.
+        </p>
+        
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🔌</div>
+            <h3>Transport Agnostic</h3>
+            <p>Direct support for WebSocket, EventSource (SSE), and HTTP Polling with automatic connection failover.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">👥</div>
+            <h3>Multi-Tab Sharing</h3>
+            <p>Elected leader tab maintains the network socket; followers delegate subscriptions via BroadcastChannel/SharedWorker.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚖️</div>
+            <h3>Policy Driven</h3>
+            <p>Control transport sharing using Isolated, Shared, Hybrid, or custom policies based on topic and filter properties.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="installation">
+        <h2>Installation</h2>
+        <p>Install the core package along with any required transport implementations:</p>
+        <pre><button class="copy-btn">Copy</button><code># Install Core
+pnpm add @connexis/core
+
+# Install Transports
+pnpm add @connexis/transport-websocket @connexis/transport-sse @connexis/transport-polling
+
+# Install React Bindings (optional)
+pnpm add @connexis/react</code></pre>
+      </section>
+
+      <section id="transports">
+        <h2>Transports Configuration</h2>
+        <p>Initialize clients using the transport that best fits your infrastructure:</p>
+
+        <h3>1. WebSocket Transport</h3>
+        <p>Bi-directional, low-latency, full-duplex communication:</p>
+        <pre><button class="copy-btn">Copy</button><code>import { createRealtimeClient } from '@connexis/core';
+import { WebSocketTransport } from '@connexis/transport-websocket';
+
+const client = createRealtimeClient({
+  transport: new WebSocketTransport('wss://api.example.com/events'),
+  connectionPolicy: 'isolated'
+});</code></pre>
+
+        <h3>2. Server-Sent Events (SSE)</h3>
+        <p>Unidirectional HTTP-based event stream from server to client, with an optional POST fallback configuration for publishing:</p>
+        <pre><button class="copy-btn">Copy</button><code>import { SSETransport } from '@connexis/transport-sse';
+
+const client = createRealtimeClient({
+  transport: new SSETransport('https://api.example.com/stream', {
+    publishUrl: 'https://api.example.com/publish' // fallback POST url for publish calls
+  })
+});</code></pre>
+
+        <h3>3. HTTP Polling</h3>
+        <p>Standard interval-driven polling fallback for legacy environments:</p>
+        <pre><button class="copy-btn">Copy</button><code>import { PollingTransport } from '@connexis/transport-polling';
+
+const client = createRealtimeClient({
+  transport: new PollingTransport('https://api.example.com/poll', {
+    pollInterval: 5000 // poll every 5 seconds
+  })
+});</code></pre>
+      </section>
+
+      <section id="policies">
+        <h2>Connection Policies</h2>
+        <p>Control socket reuse and resource consumption across tabs using policy options:</p>
+        
+        <div class="callout">
+          <div class="callout-title">Isolated Mode</div>
+          <p>Every client instance owns its own transport. Perfect for admin dashboards, query panels, or debug consoles where distinct data streams are required.</p>
+        </div>
+
+        <div class="callout" style="border-left-color: var(--accent-cyan);">
+          <div class="callout-title">Shared Mode</div>
+          <p>Only one socket connection exists browser-wide. All tabs share this connection, delegating subscriptions to the single leader tab.</p>
+        </div>
+
+        <div class="callout" style="border-left-color: var(--accent-purple);">
+          <div class="callout-title">Hybrid Mode</div>
+          <p>Deduplicates identical subscriptions (same topic and filter) onto a shared connection. Unique filters automatically spawn dedicated connections to preserve server bandwidth.</p>
+        </div>
+
+        <pre><button class="copy-btn">Copy</button><code>// Hybrid policy config
+const client = createRealtimeClient({
+  transport: new WebSocketTransport('wss://api.example.com/events'),
+  connectionPolicy: 'hybrid'
+});</code></pre>
+      </section>
+
+      <section id="coordination">
+        <h2>Multi-Tab Coordination</h2>
+        <p>
+          Passing a <code>Coordinator</code> instance to the client activates the synchronization layer. It attempts to load a dynamic <code>SharedWorker</code> first. If not supported (e.g. mobile Safari), it gracefully falls back to <code>BroadcastChannel</code>.
+        </p>
+        <pre><button class="copy-btn">Copy</button><code>import { Coordinator } from '@connexis/coordinator';
+
+const client = createRealtimeClient({
+  transport: new WebSocketTransport('wss://api.example.com/events'),
+  connectionPolicy: 'shared',
+  coordinator: new Coordinator('my_app_namespace')
+});</code></pre>
+      </section>
+
+      <section id="middlewares">
+        <h2>Middleware Pipeline</h2>
+        <p>
+          Apply async, Koa-style middlewares to intercept, inspect, modify, or reject inbound and outbound payloads:
+        </p>
+        <pre><button class="copy-btn">Copy</button><code>client.use(async (context, next) => {
+  // Inbound or Outbound directions
+  if (context.direction === 'outbound' && context.topic === 'orders') {
+    context.payload.timestamp = Date.now(); // modify payload
+  }
+  
+  await next(); // yield to next middleware in chain
+});</code></pre>
+      </section>
+
+      <section id="react">
+        <h2>React Hooks Wrapper</h2>
+        <p>Use the `@connexis/react` package to easily bind states to components with automatic subscription setup and teardown:</p>
+        <pre><button class="copy-btn">Copy</button><code>import React from 'react';
+import { RealtimeProvider, useConnection, useSubscription } from '@connexis/react';
+import { client } from './client';
+
+function App() {
+  return (
+    <RealtimeProvider client={client}>
+      <Dashboard />
+    </RealtimeProvider>
+  );
+}
+
+function Dashboard() {
+  const { state, metrics } = useConnection();
+
+  useSubscription('orders', { filter: { region: 'US' } }, (order) => {
+    console.log('New order received:', order);
+  });
+
+  return (
+    <div>
+      <h3>Status: {state}</h3>
+      <p>Latency: {metrics.latency} ms</p>
+    </div>
+  );
+}</code></pre>
+      </section>
+
+      <section id="benchmarks">
+        <h2>Benchmarks and Stress Tests</h2>
+        <p>
+          `@connexis` is engineered for high-frequency message streams. Standard performance metrics captured on local environments include:
+        </p>
+        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-primary);">
+              <th style="padding: 0.75rem;">Operation</th>
+              <th style="padding: 0.75rem;">Count</th>
+              <th style="padding: 0.75rem;">Duration</th>
+              <th style="padding: 0.75rem;">Throughput (ops/sec)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+              <td style="padding: 0.75rem; font-family: var(--font-mono);">Subscribe + Unsubscribe</td>
+              <td style="padding: 0.75rem;">10,000</td>
+              <td style="padding: 0.75rem;">1.24 s</td>
+              <td style="padding: 0.75rem; color: var(--accent-cyan); font-weight: 600;">16,098</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+              <td style="padding: 0.75rem; font-family: var(--font-mono);">Publish Message</td>
+              <td style="padding: 0.75rem;">50,000</td>
+              <td style="padding: 0.75rem;">0.13 s</td>
+              <td style="padding: 0.75rem; color: var(--accent-cyan); font-weight: 600;">374,174</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Copy to clipboard logic
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.nextElementSibling.innerText;
+        navigator.clipboard.writeText(code).then(() => {
+          const original = btn.innerText;
+          btn.innerText = 'Copied!';
+          setTimeout(() => {
+            btn.innerText = original;
+          }, 2000);
+        });
+      });
+    });
+
+    // Mobile nav toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+
+    // Simple search filter
+    const searchBox = document.getElementById('searchBox');
+    const links = document.querySelectorAll('.nav-links a');
+    searchBox.addEventListener('input', () => {
+      const query = searchBox.value.toLowerCase();
+      links.forEach(link => {
+        const text = link.innerText.toLowerCase();
+        if (text.includes(query)) {
+          link.parentElement.style.display = 'block';
+        } else {
+          link.parentElement.style.display = 'none';
+        }
+      });
+    });
+
+    // Active link highlighting on scroll
+    const sections = document.querySelectorAll('section');
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        if (pageYOffset >= sectionTop - 120) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      links.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href').substring(1) === current) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
