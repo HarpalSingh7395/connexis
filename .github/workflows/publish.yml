@@ -1,0 +1,49 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [ created ]
+  # Alternatively, trigger when pushing a version tag (e.g., v1.0.0)
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for provenance assertions (if using package provenance)
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Approve Builds (esbuild)
+        run: pnpm approve-builds --all
+
+      - name: Run Build
+        run: pnpm run build
+
+      - name: Run Tests
+        run: pnpm run test
+
+      - name: Publish Packages
+        run: pnpm publish -r --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
