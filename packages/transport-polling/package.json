@@ -1,0 +1,24 @@
+{
+  "name": "@connexis/transport-polling",
+  "version": "1.0.0",
+  "description": "HTTP Polling transport for @connexis",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean"
+  },
+  "dependencies": {
+    "@connexis/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.2"
+  }
+}
