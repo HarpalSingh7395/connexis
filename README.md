@@ -2,6 +2,8 @@
 
 A production-grade, framework-agnostic, universal browser realtime client with intelligent connection management and multi-tab synchronization.
 
+📖 **[Read the Documentation Website](https://HarpalSingh7395.github.io/connexis/)**
+
 **This is NOT just an SSE library. This is NOT a simple WebSocket wrapper.**
 
 `@connexis` acts as a connection manager for browser realtime transports, handling state machines, heartbeats, exponential reconnects, multi-tab leader election, connection sharing, subscription deduplication, and framework hooks.
