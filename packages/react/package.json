@@ -25,5 +25,21 @@
     "@types/react": "^18.3.3",
     "react": "^18.3.1",
     "typescript": "^5.5.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HarpalSingh7395/connexis.git"
+  },
+  "keywords": [
+    "realtime",
+    "connection-manager",
+    "react",
+    "hooks",
+    "websocket",
+    "sse",
+    "typescript"
+  ],
+  "author": "HarpalSingh7395 <harrysinghharpal58@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://HarpalSingh7395.github.io/connexis/"
 }

@@ -20,5 +20,21 @@
   },
   "devDependencies": {
     "typescript": "^5.5.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HarpalSingh7395/connexis.git"
+  },
+  "keywords": [
+    "realtime",
+    "connection-manager",
+    "leader-election",
+    "sharedworker",
+    "broadcastchannel",
+    "multi-tab",
+    "typescript"
+  ],
+  "author": "HarpalSingh7395 <harrysinghharpal58@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://HarpalSingh7395.github.io/connexis/"
 }
