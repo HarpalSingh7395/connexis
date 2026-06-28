@@ -21,7 +21,9 @@ interface ClientEvents {
   metricsChange: Metrics;
 }
 
-export class RealtimeClient<TEvents extends Record<string, any> = any> extends EventEmitter<ClientEvents> {
+export class RealtimeClient<
+  TEvents extends Record<string, any> = any
+> extends EventEmitter<ClientEvents> {
   private manager: ConnectionManager;
   private middlewares: Middleware[] = [];
   private logger: Logger;
@@ -63,8 +65,8 @@ export class RealtimeClient<TEvents extends Record<string, any> = any> extends E
   get state(): ConnectionState {
     const connections = Array.from(this.manager.getConnections().values());
     if (connections.length === 0) return 'idle';
-    
-    const states = connections.map(c => c.state);
+
+    const states = connections.map((c) => c.state);
     if (states.includes('reconnecting')) return 'reconnecting';
     if (states.includes('connecting')) return 'connecting';
     if (states.includes('connected')) return 'connected';
@@ -90,7 +92,7 @@ export class RealtimeClient<TEvents extends Record<string, any> = any> extends E
     };
 
     let totalLatency = 0;
-    connections.forEach(conn => {
+    connections.forEach((conn) => {
       const m = conn.metrics;
       result.reconnectCount += m.reconnectCount;
       totalLatency += m.latency;

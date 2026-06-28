@@ -5,11 +5,11 @@ export class MockTransport implements Transport {
   private _state: ConnectionState = 'idle';
   private messageCallback: ((topic: string, data: any) => void) | null = null;
   private stateCallback: ((state: ConnectionState, error?: Error) => void) | null = null;
-  
+
   public published: Array<{ topic: string; data: any }> = [];
   public subscribed: Array<{ topic: string; filter?: Record<string, any> }> = [];
   public unsubscribed: Array<{ topic: string; filter?: Record<string, any> }> = [];
-  
+
   private failNextConnect = false;
   private failError: Error = new Error('Mock connection failure');
   private connectDelay = 0;
@@ -36,7 +36,7 @@ export class MockTransport implements Transport {
     this.updateState('connecting');
 
     if (this.connectDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, this.connectDelay));
+      await new Promise((resolve) => setTimeout(resolve, this.connectDelay));
     }
 
     if (this.failNextConnect) {

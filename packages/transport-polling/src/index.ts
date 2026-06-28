@@ -13,10 +13,10 @@ export class PollingTransport implements Transport {
   private timer: any = null;
   private isConnected = false;
   private activeSubscriptions = new Set<string>();
-  
+
   private messageCb: ((topic: string, data: any) => void) | null = null;
   private stateCb: ((state: ConnectionState, error?: Error) => void) | null = null;
-  
+
   private pollInterval: number;
   private headers: Record<string, string>;
 
@@ -34,7 +34,7 @@ export class PollingTransport implements Transport {
 
   async connect(): Promise<void> {
     if (this.isConnected) return;
-    
+
     this.isConnected = true;
     this.updateState('connecting');
 
@@ -81,14 +81,16 @@ export class PollingTransport implements Transport {
       return;
     }
 
-    throw new Error('Publishing is not supported by Polling without a configured publishUrl or publish function');
+    throw new Error(
+      'Publishing is not supported by Polling without a configured publishUrl or publish function'
+    );
   }
 
-  async subscribe(topic: string, filter?: Record<string, any>): Promise<void> {
+  async subscribe(topic: string, _filter?: Record<string, any>): Promise<void> {
     this.activeSubscriptions.add(topic);
   }
 
-  async unsubscribe(topic: string, filter?: Record<string, any>): Promise<void> {
+  async unsubscribe(topic: string, _filter?: Record<string, any>): Promise<void> {
     this.activeSubscriptions.delete(topic);
   }
 
@@ -114,7 +116,7 @@ export class PollingTransport implements Transport {
 
   private startPollingLoop(): void {
     if (!this.isConnected) return;
-    
+
     this.timer = setTimeout(async () => {
       try {
         await this.poll();
@@ -140,7 +142,7 @@ export class PollingTransport implements Transport {
     const response = await fetch(pollUrl, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
         ...this.headers
       }
     });

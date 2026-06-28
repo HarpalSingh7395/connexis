@@ -18,7 +18,7 @@ class MockBroadcastChannel {
     if (!list) return;
     // Async delivery to simulate actual browser event loop tick
     setTimeout(() => {
-      list.forEach(c => {
+      list.forEach((c) => {
         if (c !== this && c.onmessage) {
           c.onmessage({ data } as MessageEvent);
         }
@@ -97,7 +97,7 @@ describe('Coordinator Leader Election & Failover', () => {
 
     // leader exit triggers clean election
     coord1.destroy();
-    
+
     // Process the election ticks
     await vi.advanceTimersByTimeAsync(2000);
 

@@ -98,7 +98,7 @@ export class Coordinator extends EventEmitter<CoordinatorEvents> {
 
   // SharedWorker reference
   private sharedWorker: SharedWorker | null = null;
-  
+
   // BroadcastChannel references
   private channel: BroadcastChannel | null = null;
   private leaderHeartbeatTimer: any = null;
@@ -143,14 +143,14 @@ export class Coordinator extends EventEmitter<CoordinatorEvents> {
 
     const blob = new Blob([SHARED_WORKER_CODE], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(blob);
-    
+
     this.sharedWorker = new SharedWorker(workerUrl, this.namespace);
     this.sharedWorker.port.onmessage = (event) => {
       this.handleSharedWorkerMessage(event.data);
     };
-    
+
     this.sharedWorker.port.start();
-    
+
     // Register self
     this.sharedWorker.port.postMessage({
       type: 'register',
@@ -201,7 +201,7 @@ export class Coordinator extends EventEmitter<CoordinatorEvents> {
     // Start follower check loop
     this.followerCheckTimer = setInterval(() => {
       if (this._isLeader) return;
-      
+
       const now = Date.now();
       if (now - this.lastLeaderHeartbeat > 3500) {
         // Leader dead, trigger election
@@ -310,7 +310,7 @@ export class Coordinator extends EventEmitter<CoordinatorEvents> {
 
   private startLeaderHeartbeat(): void {
     if (this.leaderHeartbeatTimer) clearInterval(this.leaderHeartbeatTimer);
-    
+
     this.leaderHeartbeatTimer = setInterval(() => {
       if (this._isLeader) {
         this.announceLeader();
@@ -321,7 +321,7 @@ export class Coordinator extends EventEmitter<CoordinatorEvents> {
   private updateLeader(newLeaderId: string | null): void {
     const isNowLeader = newLeaderId === this.tabId;
     const changed = this.leaderId !== newLeaderId || this._isLeader !== isNowLeader;
-    
+
     this.leaderId = newLeaderId;
     this._isLeader = isNowLeader;
 
@@ -415,7 +415,7 @@ export class Coordinator extends EventEmitter<CoordinatorEvents> {
   destroy(): void {
     this.isDestroyed = true;
     window.removeEventListener('beforeunload', this.handleUnload);
-    
+
     if (this._isLeader) {
       if (this.sharedWorker) {
         this.sharedWorker.port.postMessage({ type: 'unload' });

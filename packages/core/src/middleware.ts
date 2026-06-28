@@ -7,13 +7,13 @@ import { Logger } from './logger.js';
 export function compose(middlewares: Middleware[]) {
   return function (context: MiddlewareContext, next: () => Promise<void>): Promise<void> {
     let index = -1;
-    
+
     function dispatch(i: number): Promise<void> {
       if (i <= index) {
         return Promise.reject(new Error('next() called multiple times'));
       }
       index = i;
-      let fn = middlewares[i];
+      const fn = middlewares[i];
       if (i === middlewares.length) {
         return next();
       }
@@ -24,7 +24,7 @@ export function compose(middlewares: Middleware[]) {
         return Promise.reject(err);
       }
     }
-    
+
     return dispatch(0);
   };
 }
@@ -43,7 +43,9 @@ export function loggerMiddleware(debugEnabled = false): Middleware {
 /**
  * Built-in middleware to track throughput statistics.
  */
-export function metricsMiddleware(onIncrement: (direction: 'inbound' | 'outbound') => void): Middleware {
+export function metricsMiddleware(
+  onIncrement: (direction: 'inbound' | 'outbound') => void
+): Middleware {
   return async (ctx, next) => {
     onIncrement(ctx.direction);
     await next();

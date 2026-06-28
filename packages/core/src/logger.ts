@@ -3,7 +3,12 @@ export class Logger {
 
   info(module: string, message: string, ...args: any[]) {
     if (this.enabled) {
-      console.log(`%c[Connexis:${module}] %c${message}`, 'color: #00bcd4; font-weight: bold;', 'color: inherit;', ...args);
+      console.log(
+        `%c[Connexis:${module}] %c${message}`,
+        'color: #00bcd4; font-weight: bold;',
+        'color: inherit;',
+        ...args
+      );
     }
   }
 

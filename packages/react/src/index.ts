@@ -65,7 +65,7 @@ export const useSubscription = <T = any>(
   handlerOrUndefined?: (data: T) => void
 ): void => {
   const client = useRealtime();
-  
+
   const options = typeof optionsOrHandler === 'object' ? optionsOrHandler : {};
   const handler = typeof optionsOrHandler === 'function' ? optionsOrHandler : handlerOrUndefined;
 
@@ -118,9 +118,12 @@ export const useChannel = useSubscription;
 /**
  * Hook returning a callback to publish events to a topic.
  */
-export const usePublish = (): <K extends string, V = any>(topic: K, payload: V) => Promise<void> => {
+export const usePublish = (): (<K extends string, V = any>(
+  topic: K,
+  payload: V
+) => Promise<void>) => {
   const client = useRealtime();
-  
+
   return useCallback(
     async <K extends string, V = any>(topic: K, payload: V) => {
       await client.publish(topic, payload);

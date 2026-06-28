@@ -40,12 +40,8 @@ describe('Connection Lifecycle and State Machine', () => {
   });
 
   it('should trigger reconnection on failure', async () => {
-    const conn = new Connection(
-      transport,
-      { maxAttempts: 3, delay: 100 },
-      { enabled: false }
-    );
-    
+    const conn = new Connection(transport, { maxAttempts: 3, delay: 100 }, { enabled: false });
+
     transport.setFailNextConnect(true);
 
     const stateChanges: string[] = [];
@@ -65,17 +61,13 @@ describe('Connection Lifecycle and State Machine', () => {
   });
 
   it('should transition to error state if maxAttempts is reached', async () => {
-    const conn = new Connection(
-      transport,
-      { maxAttempts: 1, delay: 100 },
-      { enabled: false }
-    );
+    const conn = new Connection(transport, { maxAttempts: 1, delay: 100 }, { enabled: false });
 
     transport.setFailNextConnect(true);
-    
+
     // First attempt fails, triggers 1 reconnect attempt which also fails
     await conn.connect();
-    
+
     // Fail the reconnect attempt too
     transport.setFailNextConnect(true);
     await vi.runAllTimersAsync();
@@ -92,19 +84,19 @@ describe('Connection Lifecycle and State Machine', () => {
     );
 
     await conn.connect();
-    
+
     // Travel forward in time to trigger heartbeat
     await vi.advanceTimersByTimeAsync(1100);
-    
+
     // Heartbeat sent, now simulate receiving pong back
-    const pingMessage = transport.published.find(p => p.topic === '__heartbeat__');
+    const pingMessage = transport.published.find((p) => p.topic === '__heartbeat__');
     expect(pingMessage).toBeDefined();
 
     // Advance clock to simulate network latency
     await vi.advanceTimersByTimeAsync(50);
-    
+
     transport.simulateMessage('__heartbeat__', 'pong');
-    
+
     expect(conn.metrics.latency).toBeGreaterThan(0);
     conn.destroy();
   });

@@ -10,7 +10,7 @@ export class SSETransport implements Transport {
   public readonly type = 'sse';
   private eventSource: EventSource | null = null;
   private _state: ConnectionState = 'idle';
-  
+
   private messageCb: ((topic: string, data: any) => void) | null = null;
   private stateCb: ((state: ConnectionState, error?: Error) => void) | null = null;
   private activeListeners = new Map<string, (e: MessageEvent) => void>();
@@ -50,7 +50,7 @@ export class SSETransport implements Transport {
         resolve();
       };
 
-      this.eventSource.onerror = (event) => {
+      this.eventSource.onerror = (_event) => {
         const error = new Error('SSE EventSource connection error');
         if (!hasOpened) {
           this.updateState('error', error);
@@ -107,10 +107,12 @@ export class SSETransport implements Transport {
       return;
     }
 
-    throw new Error('Publishing is not supported by SSE without a configured publishUrl or publish function');
+    throw new Error(
+      'Publishing is not supported by SSE without a configured publishUrl or publish function'
+    );
   }
 
-  async subscribe(topic: string, filter?: Record<string, any>): Promise<void> {
+  async subscribe(topic: string, _filter?: Record<string, any>): Promise<void> {
     if (this.activeListeners.has(topic)) return;
 
     const listener = (event: MessageEvent) => {
@@ -129,7 +131,7 @@ export class SSETransport implements Transport {
     }
   }
 
-  async unsubscribe(topic: string, filter?: Record<string, any>): Promise<void> {
+  async unsubscribe(topic: string, _filter?: Record<string, any>): Promise<void> {
     const listener = this.activeListeners.get(topic);
     if (!listener) return;
 

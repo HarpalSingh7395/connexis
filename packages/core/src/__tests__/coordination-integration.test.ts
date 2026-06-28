@@ -20,7 +20,7 @@ class MockBroadcastChannel {
     if (!list) return;
     // Async delivery to simulate actual event loop tick
     setTimeout(() => {
-      list.forEach(c => {
+      list.forEach((c) => {
         if (c !== this && c.onmessage) {
           c.onmessage({ data } as MessageEvent);
         }
@@ -95,7 +95,7 @@ describe('Multi-tab Connection Sharing Integration', () => {
 
     // Yield so BroadcastChannel delivers subscription request to leader
     await vi.advanceTimersByTimeAsync(100);
-    
+
     // Check that Follower client has NO active connections (since it is a follower)
     const mgrFollower = (followerClient as any).manager;
     expect(mgrFollower.getConnections().size).toBe(0);

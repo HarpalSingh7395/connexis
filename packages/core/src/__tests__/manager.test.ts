@@ -31,14 +31,23 @@ describe('ConnectionManager', () => {
     const mgr = new ConnectionManager(transport, 'hybrid');
 
     // Identical subscriptions
-    const unsub1 = await mgr.subscribe({ id: '1', topic: 'orders', filter: { region: 'US' } }, () => {});
-    const unsub2 = await mgr.subscribe({ id: '2', topic: 'orders', filter: { region: 'US' } }, () => {});
+    const unsub1 = await mgr.subscribe(
+      { id: '1', topic: 'orders', filter: { region: 'US' } },
+      () => {}
+    );
+    const unsub2 = await mgr.subscribe(
+      { id: '2', topic: 'orders', filter: { region: 'US' } },
+      () => {}
+    );
 
     // Total connections should be 1
     expect(mgr.getConnections().size).toBe(1);
 
     // Different filter
-    const unsub3 = await mgr.subscribe({ id: '3', topic: 'orders', filter: { region: 'EU' } }, () => {});
+    const unsub3 = await mgr.subscribe(
+      { id: '3', topic: 'orders', filter: { region: 'EU' } },
+      () => {}
+    );
     expect(mgr.getConnections().size).toBe(2);
 
     await unsub1();
@@ -60,8 +69,11 @@ describe('ConnectionManager', () => {
     await mgr.subscribe({ id: '3', topic: 'orders', metadata: { shardKey: 'shard_B' } }, () => {});
 
     expect(mgr.getConnections().size).toBe(2);
-    expect(Array.from(mgr.getConnections().keys()).sort()).toEqual(['custom_shard_A', 'custom_shard_B']);
-    
+    expect(Array.from(mgr.getConnections().keys()).sort()).toEqual([
+      'custom_shard_A',
+      'custom_shard_B'
+    ]);
+
     await mgr.destroy();
   });
 });

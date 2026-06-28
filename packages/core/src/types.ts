@@ -2,13 +2,7 @@
  * Valid connection states for a transport or client connection.
  */
 export type ConnectionState =
-  | 'idle'
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'offline'
-  | 'closed'
-  | 'error';
+  'idle' | 'connecting' | 'connected' | 'reconnecting' | 'offline' | 'closed' | 'error';
 
 /**
  * Capabilities supported by a specific transport.
@@ -25,7 +19,7 @@ export interface TransportCapabilities {
 export interface Transport {
   /** The type of transport (e.g., 'sse', 'websocket', 'polling') */
   readonly type: string;
-  
+
   /** Current state of the transport */
   readonly state: ConnectionState;
 
@@ -80,10 +74,7 @@ export interface Subscription {
  * Determines how connections are grouped or shared across tabs and clients.
  */
 export type ConnectionPolicy =
-  | 'shared'
-  | 'isolated'
-  | 'hybrid'
-  | ((subscription: Subscription) => string);
+  'shared' | 'isolated' | 'hybrid' | ((subscription: Subscription) => string);
 
 /**
  * Connection pool configuration and control options.
@@ -153,10 +144,7 @@ export interface MiddlewareContext {
 /**
  * Middleware function interface.
  */
-export type Middleware = (
-  context: MiddlewareContext,
-  next: () => Promise<void>
-) => Promise<void>;
+export type Middleware = (context: MiddlewareContext, next: () => Promise<void>) => Promise<void>;
 
 /**
  * Metrics tracked for performance monitoring.

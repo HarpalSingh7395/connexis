@@ -107,10 +107,7 @@ export class Connection extends EventEmitter<ConnectionEvents> {
     );
 
     try {
-      await Promise.race([
-        this.transport.connect(),
-        timeoutPromise
-      ]);
+      await Promise.race([this.transport.connect(), timeoutPromise]);
       this.reconnectAttempt = 0;
       this.transition('connected');
     } catch (err) {
@@ -197,7 +194,7 @@ export class Connection extends EventEmitter<ConnectionEvents> {
     }
 
     this.clearTimers();
-    
+
     if (this.isIntentionallyClosed) {
       this.transition('closed');
       return;
@@ -210,7 +207,10 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 
     const maxAttempts = this.reconnectOptions.maxAttempts ?? Infinity;
     if (this.reconnectAttempt >= maxAttempts) {
-      this.logger.warn('Connection', `Max reconnect attempts (${maxAttempts}) reached. Setting state to error.`);
+      this.logger.warn(
+        'Connection',
+        `Max reconnect attempts (${maxAttempts}) reached. Setting state to error.`
+      );
       this.transition('error', new Error('Max reconnect attempts reached'));
       return;
     }
@@ -221,11 +221,13 @@ export class Connection extends EventEmitter<ConnectionEvents> {
     this.transition('reconnecting', error);
 
     const delayOption = this.reconnectOptions.delay ?? 1000;
-    const delay = typeof delayOption === 'function'
-      ? delayOption(this.reconnectAttempt)
-      : delayOption;
+    const delay =
+      typeof delayOption === 'function' ? delayOption(this.reconnectAttempt) : delayOption;
 
-    this.logger.info('Connection', `Scheduling reconnect attempt ${this.reconnectAttempt} in ${delay}ms`);
+    this.logger.info(
+      'Connection',
+      `Scheduling reconnect attempt ${this.reconnectAttempt} in ${delay}ms`
+    );
     this.reconnectTimer = setTimeout(() => {
       this.connect();
     }, delay);
@@ -234,9 +236,13 @@ export class Connection extends EventEmitter<ConnectionEvents> {
   private handleMessage(topic: string, data: any): void {
     this._metrics.throughput.inbound++;
     this.emit('metricsChange', this.metrics);
-    
+
     // Check if it is a heartbeat response
-    if (topic === '__heartbeat__' || (topic === this.heartbeatOptions.message && data === 'pong') || data === 'pong') {
+    if (
+      topic === '__heartbeat__' ||
+      (topic === this.heartbeatOptions.message && data === 'pong') ||
+      data === 'pong'
+    ) {
       this.handleHeartbeatResponse();
     }
 
@@ -261,7 +267,7 @@ export class Connection extends EventEmitter<ConnectionEvents> {
       if (this._state !== 'connected') return;
 
       this.lastActiveTime = Date.now();
-      
+
       // Start timeout timer
       const timeoutMs = this.heartbeatOptions.timeout ?? 5000;
       this.heartbeatTimeoutTimer = setTimeout(() => {

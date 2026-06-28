@@ -15,13 +15,13 @@ export class EventEmitter<T extends Record<string, any>> {
   off<K extends keyof T>(event: K, cb: (data: T[K]) => void): void {
     const list = this.listeners[event];
     if (!list) return;
-    this.listeners[event] = list.filter(item => item !== cb);
+    this.listeners[event] = list.filter((item) => item !== cb);
   }
 
   emit<K extends keyof T>(event: K, data: T[K]): void {
     const list = this.listeners[event];
     if (!list) return;
-    [...list].forEach(cb => {
+    [...list].forEach((cb) => {
       try {
         cb(data);
       } catch (err) {

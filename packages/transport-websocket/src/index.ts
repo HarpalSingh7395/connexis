@@ -14,7 +14,7 @@ export class WebSocketTransport implements Transport {
   public readonly type = 'websocket';
   private ws: WebSocket | null = null;
   private _state: ConnectionState = 'idle';
-  
+
   private messageCb: ((topic: string, data: any) => void) | null = null;
   private stateCb: ((state: ConnectionState, error?: Error) => void) | null = null;
   private serializer: Serializer;
@@ -59,7 +59,7 @@ export class WebSocketTransport implements Transport {
         this.handleMessage(event.data);
       };
 
-      this.ws.onerror = (event) => {
+      this.ws.onerror = (_event) => {
         const error = new Error('WebSocket error event');
         if (!hasOpened) {
           this.updateState('error', error);
@@ -69,7 +69,7 @@ export class WebSocketTransport implements Transport {
         }
       };
 
-      this.ws.onclose = (event) => {
+      this.ws.onclose = (_event) => {
         this.updateState('closed');
       };
     });

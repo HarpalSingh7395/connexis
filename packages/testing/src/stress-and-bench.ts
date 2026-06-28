@@ -1,4 +1,4 @@
-import { createRealtimeClient, ConnectionManager, ConnectionState } from '@connexis/core';
+import { createRealtimeClient, ConnectionManager } from '@connexis/core';
 import { MockTransport } from './mock-transport.js';
 
 /**
@@ -47,7 +47,7 @@ export async function runBenchmarks(): Promise<BenchmarkReport[]> {
     const client = createRealtimeClient({ transport });
     // Spin up connection
     await client.subscribe('test', () => {});
-    
+
     const count = 50000;
     const start = performance.now();
     for (let i = 0; i < count; i++) {
@@ -69,7 +69,10 @@ export async function runBenchmarks(): Promise<BenchmarkReport[]> {
 /**
  * Scenario: Stress test hybrid policy deduplication with 1,000 subscriptions.
  */
-export async function runHybridStressTest(): Promise<{ connectionsCount: number; subscriptionsCount: number }> {
+export async function runHybridStressTest(): Promise<{
+  connectionsCount: number;
+  subscriptionsCount: number;
+}> {
   const transport = new MockTransport();
   const manager = new ConnectionManager(transport, 'hybrid');
 
@@ -80,7 +83,7 @@ export async function runHybridStressTest(): Promise<{ connectionsCount: number;
     { region: 'EU' },
     { region: 'AP' },
     { region: 'US' }, // duplicate of 0
-    { region: 'EU' }  // duplicate of 1
+    { region: 'EU' } // duplicate of 1
   ];
 
   for (let i = 0; i < count; i++) {

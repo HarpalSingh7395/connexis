@@ -16,7 +16,7 @@ describe('RealtimeClient', () => {
 
   it('should publish messages through middleware', async () => {
     const client = createRealtimeClient<TestEvents>({ transport });
-    
+
     const middlewareLogs: string[] = [];
     client.use(async (ctx, next) => {
       middlewareLogs.push(`${ctx.direction}:${ctx.topic}`);
@@ -31,19 +31,20 @@ describe('RealtimeClient', () => {
 
     // Get the underlying transport clone that gets spun up by the manager
     const connectionKey = Array.from((client as any).manager.getConnections().keys())[0];
-    const activeTransport = (client as any).manager.getConnections().get(connectionKey).transport as MockTransport;
+    const activeTransport = (client as any).manager.getConnections().get(connectionKey)
+      .transport as MockTransport;
 
     await client.publish('orders', { id: 'o1', region: 'US', total: 100 });
 
     expect(activeTransport.published[0].data).toEqual({ id: 'o1', region: 'US', total: 110 });
     expect(middlewareLogs).toContain('outbound:orders');
-    
+
     await client.destroy();
   });
 
   it('should deliver inbound messages through middleware to subscribers', async () => {
     const client = createRealtimeClient<TestEvents>({ transport });
-    
+
     client.use(async (ctx, next) => {
       if (ctx.direction === 'inbound' && ctx.topic === 'notifications') {
         ctx.payload.text = ctx.payload.text.toUpperCase();
@@ -55,12 +56,13 @@ describe('RealtimeClient', () => {
     await client.subscribe('notifications', subHandler);
 
     const connectionKey = Array.from((client as any).manager.getConnections().keys())[0];
-    const activeTransport = (client as any).manager.getConnections().get(connectionKey).transport as MockTransport;
+    const activeTransport = (client as any).manager.getConnections().get(connectionKey)
+      .transport as MockTransport;
 
     activeTransport.simulateMessage('notifications', { text: 'hello' });
 
     expect(subHandler).toHaveBeenCalledWith({ text: 'HELLO' });
-    
+
     await client.destroy();
   });
 });

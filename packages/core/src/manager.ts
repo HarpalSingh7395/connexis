@@ -22,7 +22,7 @@ interface ManagerEvents {
 export class ConnectionManager extends EventEmitter<ManagerEvents> {
   private connections = new Map<string, Connection>();
   private refCounts = new Map<string, number>();
-  
+
   // Local active subscriptions
   private subscriptions = new Map<
     string,
@@ -63,10 +63,12 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
     if (obj === null || obj === undefined) return 'null';
     if (typeof obj !== 'object') return JSON.stringify(obj);
     if (Array.isArray(obj)) {
-      return '[' + obj.map(item => this.stableStringify(item)).join(',') + ']';
+      return '[' + obj.map((item) => this.stableStringify(item)).join(',') + ']';
     }
     const keys = Object.keys(obj).sort();
-    return '{' + keys.map(k => `${JSON.stringify(k)}:${this.stableStringify(obj[k])}`).join(',') + '}';
+    return (
+      '{' + keys.map((k) => `${JSON.stringify(k)}:${this.stableStringify(obj[k])}`).join(',') + '}'
+    );
   }
 
   getConnectionKey(subscription: Subscription): string {
@@ -96,7 +98,7 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
     // If coordinator is active and we are follower, delegate
     if (this.coordinator && !this.coordinator.isLeader) {
       this.logger.info('Manager', `Delegating subscription ${subscription.id} to leader`);
-      
+
       this.subscriptions.set(subscription.id, {
         subscription,
         connectionKey: 'shared_coordinated',
@@ -159,7 +161,7 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
         this.emit('error', { connectionKey: key, error });
       });
 
-      connection.connect().catch(err => {
+      connection.connect().catch((err) => {
         this.logger.error('Manager', `Direct connection connect failed for ${key}`, err);
       });
     }
@@ -238,13 +240,12 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
 
     // Direct publish (leader or isolated)
     const activeConnection = Array.from(this.connections.values()).find(
-      c => c.state === 'connected'
+      (c) => c.state === 'connected'
     );
 
     if (activeConnection) {
       await activeConnection.publish(topic, data);
     } else {
-      const key = `temp_pub_${Math.random().toString(36).substring(2, 9)}`;
       const transportInstance = this.baseTransport.clone();
       const tempConnection = new Connection(
         transportInstance,
@@ -286,7 +287,7 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
       } else {
         // Promoted to follower: tear down all direct connections, resend subs to new leader
         await this.teardownDirectConnections();
-        
+
         const subsToRecreate = Array.from(this.subscriptions.values());
         for (const subItem of subsToRecreate) {
           subItem.connectionKey = 'shared_coordinated';
@@ -307,8 +308,11 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
       if (this.coordinator?.isLeader) {
         // Process follower messages
         switch (payload.action) {
-          case 'subscribe':
-            this.logger.info('Manager', `Leader received sub request from ${senderId} for subId=${payload.subId}`);
+          case 'subscribe': {
+            this.logger.info(
+              'Manager',
+              `Leader received sub request from ${senderId} for subId=${payload.subId}`
+            );
             const unsub = await this.subscribeDirect(payload.subscription, (data) => {
               this.coordinator?.sendToTab(senderId, {
                 action: 'event',
@@ -318,7 +322,8 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
             });
             this.followerSubscriptions.set(payload.subId, unsub);
             break;
-          case 'unsubscribe':
+          }
+          case 'unsubscribe': {
             this.logger.info('Manager', `Leader received unsub request for subId=${payload.subId}`);
             const unsubFunc = this.followerSubscriptions.get(payload.subId);
             if (unsubFunc) {
@@ -326,6 +331,7 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
               this.followerSubscriptions.delete(payload.subId);
             }
             break;
+          }
           case 'publish':
             await this.publish(payload.topic, payload.data);
             break;
@@ -348,7 +354,7 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
   }
 
   private async teardownDirectConnections(): Promise<void> {
-    const promises = Array.from(this.connections.values()).map(async c => {
+    const promises = Array.from(this.connections.values()).map(async (c) => {
       try {
         await c.disconnect();
       } catch (err) {
