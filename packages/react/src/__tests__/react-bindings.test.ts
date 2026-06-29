@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
 import { 
   useRealtime, 
   useConnection, 
@@ -21,9 +21,9 @@ class MockClient {
     throughput: { inbound: 0, outbound: 0 }
   };
 
-  private listeners = new Map<string, Set<Function>>();
+  private listeners = new Map<string, Set<(...args: any[]) => void>>();
 
-  on(event: string, callback: Function) {
+  on(event: string, callback: (...args: any[]) => void) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
@@ -121,7 +121,7 @@ describe('@connexis/react Hooks', () => {
     const mockUnsub = vi.fn().mockResolvedValue(undefined);
     client.subscribe.mockResolvedValue(mockUnsub);
 
-    let effectCleanup: Function | undefined;
+    let effectCleanup: (() => void) | undefined;
 
     vi.mocked(useEffect).mockImplementationOnce((effect) => {
       effectCleanup = effect() as any;
@@ -138,7 +138,7 @@ describe('@connexis/react Hooks', () => {
     expect(client.subscribe).toHaveBeenCalledWith('ticks', {}, expect.any(Function));
 
     // Verify trigger handler callback
-    const subscribeCallback = client.subscribe.mock.calls[0][2] as Function;
+    const subscribeCallback = client.subscribe.mock.calls[0][2] as (...args: any[]) => void;
     subscribeCallback('price_data');
     expect(handler).toHaveBeenCalledWith('price_data');
 

@@ -53,4 +53,34 @@ test.describe('Connexis Multi-Tab E2E Tests', () => {
 
     await pageB.close();
   });
+
+  test('should support dynamic transport switching and manual connection toggling', async ({ page }) => {
+    page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
+    await page.goto('/');
+
+    const stateVal = page.locator('.status-row:has-text("Client Lifecycle State") .status-value');
+    const connCount = page.locator('.status-row:has-text("Active Connection Count") .status-value');
+    const toggleBtn = page.locator('button.btn:has-text("Disconnect"), button.btn:has-text("Connect")');
+    const transportSelect = page.locator('select.form-select');
+
+    // Verify initial connection
+    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
+    await expect(connCount).toHaveText('1');
+
+    // 1. Test manual disconnect
+    await toggleBtn.click();
+    await expect(stateVal).toHaveText('closed', { timeout: 5000 });
+    await expect(connCount).toHaveText('0');
+
+    // 2. Test manual reconnect
+    await toggleBtn.click();
+    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
+    await expect(connCount).toHaveText('1');
+
+    // 3. Test dynamic transport switching (WebSocket -> SSE)
+    await transportSelect.selectOption('SSE');
+    await expect(page.locator('.terminal-body')).toContainText('Switched transport to SSE', { timeout: 5000 });
+    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
+    await expect(connCount).toHaveText('1');
+  });
 });

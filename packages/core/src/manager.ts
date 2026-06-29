@@ -368,6 +368,17 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
     this.followerSubscriptions.clear();
   }
 
+  reconnectAll(): void {
+    this.logger.info('Manager', 'Reconnecting all connections');
+    for (const conn of this.connections.values()) {
+      if (conn.state === 'closed' || conn.state === 'error' || conn.state === 'offline') {
+        conn.connect().catch((err) => {
+          this.logger.error('Manager', `Reconnect failed: ${err.message}`);
+        });
+      }
+    }
+  }
+
   getConnections(): Map<string, Connection> {
     return this.connections;
   }
