@@ -1,6 +1,6 @@
 {
   "name": "@connexis/transport-sse",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Server-Sent Events (SSE) transport for @connexis",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

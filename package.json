@@ -1,6 +1,6 @@
 {
   "name": "connexis-monorepo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Universal Browser Realtime Client with intelligent connection management",
   "scripts": {

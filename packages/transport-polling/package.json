@@ -1,6 +1,6 @@
 {
   "name": "@connexis/transport-polling",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "HTTP Polling transport for @connexis",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
