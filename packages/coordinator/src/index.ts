@@ -121,19 +121,14 @@ export class Coordinator extends EventEmitter<CoordinatorEvents> {
     return this.leaderId;
   }
 
-  /**
-   * Initializes the coordination protocol, trying SharedWorker first, falling back to BroadcastChannel.
-   */
   start(): void {
     if (typeof window === 'undefined') return;
 
     window.addEventListener('beforeunload', this.handleUnload);
 
-    try {
-      this.trySharedWorker();
-    } catch (err) {
-      this.initBroadcastChannel();
-    }
+    // Default to BroadcastChannel for zero-config multi-tab communication.
+    // Falls back to single tab mode if BroadcastChannel is not supported.
+    this.initBroadcastChannel();
   }
 
   private trySharedWorker(): void {
