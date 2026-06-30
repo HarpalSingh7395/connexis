@@ -86,6 +86,8 @@ export interface ReconnectOptions {
   delay?: number | ((attempt: number) => number);
   /** Timeout in ms before a connection attempt fails */
   timeout?: number;
+  /** Stable threshold in ms. Connection is considered stable after this time. Default is 5000 */
+  stableThreshold?: number;
 }
 
 /**

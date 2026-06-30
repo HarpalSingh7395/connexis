@@ -16,9 +16,14 @@
     "build": "tsup src/index.ts --format cjs,esm --dts --clean"
   },
   "dependencies": {
-    "@connexis/core": "workspace:*"
+    "@connexis/core": "workspace:*",
+    "@connexis/transport-polling": "workspace:*",
+    "@connexis/transport-sse": "workspace:*",
+    "@connexis/transport-websocket": "workspace:*"
   },
   "devDependencies": {
+    "@types/eventsource": "^3.0.0",
+    "eventsource": "^4.1.0",
     "typescript": "^5.5.2"
   },
   "repository": {

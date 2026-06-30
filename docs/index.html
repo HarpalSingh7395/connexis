@@ -109,6 +109,30 @@ const client = createRealtimeClient({
     pollInterval: 5000 // poll every 5 seconds
   })
 });</code></pre>
+
+        <h3>Reconnection &amp; Token Rotation</h3>
+        <p>
+          Prevent infinite connection loops during post-handshake auth rejection (e.g., when invalid credentials close the connection instantly) and dynamically refresh expired credentials using reconnect options and asynchronous token provider callbacks:
+        </p>
+        <pre><button class="copy-btn">Copy</button><code>let cachedToken = 'initial-token';
+
+const client = createRealtimeClient({
+  transport: new WebSocketTransport('wss://api.example.com/events', {
+    // Asynchronous token resolver called on every connection attempt
+    authToken: async () => {
+      if (checkIfExpired(cachedToken)) {
+        cachedToken = await refreshAuthToken();
+      }
+      return cachedToken;
+    }
+  }),
+  reconnectOptions: {
+    maxAttempts: 5,
+    delay: 1000,
+    // Connection must stay open for 5s to reset the backoff counter
+    stableThreshold: 5000 
+  }
+});</code></pre>
       </section>
 
       <section id="policies">

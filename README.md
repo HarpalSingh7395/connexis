@@ -118,6 +118,31 @@ console.log('Average Latency:', typedClient.metrics.latency, 'ms');
 
 ---
 
+## Reconnection, Stability, and Token Rotation
+
+To ensure eventual consistency and stability under network volatility, `@connexis` implements advanced reconnection configurations:
+
+* 🔄 **Exponential Reconnection Backoff**: Fully customizable retry intervals with standard exponential backoff defaults.
+* 🛡️ **Stability Threshold Protection**: Prevents infinite reconnect loops on application-level authentication failures (e.g., invalid/expired tokens). A connection must remain active for a `stableThreshold` window before its retry counter resets to `0`. If a server rejects authentication post-handshake, the retry count is preserved, eventually exhausting `maxAttempts` and transitioning the client to `'error'` state.
+* 🔑 **Dynamic Token Rotation**: The `authToken` configuration parameter accepts an asynchronous callback function (returning a `Promise<string>`). When a connection attempt is initiated or retried, this callback is re-evaluated to dynamically fetch fresh credentials.
+
+### Configuration Options (`ReconnectOptions`)
+
+```typescript
+interface ReconnectOptions {
+  /** Maximum reconnection attempts before giving up. Defaults to Infinity */
+  maxAttempts?: number;
+  /** Backoff delay in ms or a custom function resolver */
+  delay?: number | ((attempt: number) => number);
+  /** Timeout in ms for connection handshake attempts */
+  timeout?: number;
+  /** Stabilization window in ms. Counter resets only after this time. Defaults to 5000ms */
+  stableThreshold?: number;
+}
+```
+
+---
+
 ## React Hooks Example
 
 Wrap your application in `RealtimeProvider` and use the built-in hooks:

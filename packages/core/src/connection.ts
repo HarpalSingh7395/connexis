@@ -20,6 +20,7 @@ export class Connection extends EventEmitter<ConnectionEvents> {
   private _metrics: Metrics;
   private reconnectAttempt = 0;
   private reconnectTimer: any = null;
+  private stableTimer: any = null;
   private heartbeatIntervalTimer: any = null;
   private heartbeatTimeoutTimer: any = null;
   private lastActiveTime = Date.now();
@@ -108,7 +109,15 @@ export class Connection extends EventEmitter<ConnectionEvents> {
 
     try {
       await Promise.race([this.transport.connect(), timeoutPromise]);
-      this.reconnectAttempt = 0;
+      
+      const threshold = this.reconnectOptions.stableThreshold ?? 5000;
+      this.clearStableTimer();
+      this.stableTimer = setTimeout(() => {
+        this.reconnectAttempt = 0;
+        this.logger.info('Connection', 'Connection stabilized. Resetting reconnect attempts.');
+        this.stableTimer = null;
+      }, threshold);
+
       this.transition('connected');
     } catch (err) {
       this.logger.error('Connection', 'Connect failed', err);
@@ -325,7 +334,15 @@ export class Connection extends EventEmitter<ConnectionEvents> {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+    this.clearStableTimer();
     this.stopHeartbeat();
+  }
+
+  private clearStableTimer(): void {
+    if (this.stableTimer) {
+      clearTimeout(this.stableTimer);
+      this.stableTimer = null;
+    }
   }
 
   destroy(): void {
