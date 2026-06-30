@@ -4,7 +4,8 @@ export interface PollingTransportOptions {
   pollInterval?: number;
   publishUrl?: string;
   publish?: (topic: string, data: any) => Promise<void>;
-  headers?: Record<string, string>;
+  headers?: Record<string, string> | (() => Record<string, string> | Promise<Record<string, string>>);
+  authToken?: string | (() => string | Promise<string>);
 }
 
 export class PollingTransport implements Transport {
@@ -18,14 +19,29 @@ export class PollingTransport implements Transport {
   private stateCb: ((state: ConnectionState, error?: Error) => void) | null = null;
 
   private pollInterval: number;
-  private headers: Record<string, string>;
 
   constructor(
     private url: string,
     private options: PollingTransportOptions = {}
   ) {
     this.pollInterval = options.pollInterval || 5000;
-    this.headers = options.headers || {};
+  }
+
+  private async getRequestHeaders(): Promise<Record<string, string>> {
+    const resolvedHeaders = typeof this.options.headers === 'function'
+      ? await this.options.headers()
+      : this.options.headers || {};
+
+    const headers: Record<string, string> = { ...resolvedHeaders };
+
+    if (this.options.authToken) {
+      const token = typeof this.options.authToken === 'function'
+        ? await this.options.authToken()
+        : this.options.authToken;
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return headers;
   }
 
   get state(): ConnectionState {
@@ -67,11 +83,12 @@ export class PollingTransport implements Transport {
     }
 
     if (this.options.publishUrl) {
+      const headers = await this.getRequestHeaders();
       const response = await fetch(this.options.publishUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...this.headers
+          ...headers
         },
         body: JSON.stringify({ topic, data })
       });
@@ -139,11 +156,12 @@ export class PollingTransport implements Transport {
     }
 
     const pollUrl = `${this.url}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const headers = await this.getRequestHeaders();
     const response = await fetch(pollUrl, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
-        ...this.headers
+        ...headers
       }
     });
 

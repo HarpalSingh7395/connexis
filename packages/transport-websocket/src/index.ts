@@ -3,6 +3,7 @@ import { Transport, ConnectionState, TransportCapabilities, Serializer } from '@
 export interface WebSocketTransportOptions {
   protocols?: string | string[];
   serializer?: Serializer;
+  authToken?: string | (() => string | Promise<string>);
 }
 
 const defaultSerializer: Serializer = {
@@ -37,10 +38,19 @@ export class WebSocketTransport implements Transport {
 
     this.updateState('connecting');
 
+    let connectionUrl = this.url;
+    if (this.options.authToken) {
+      const token = typeof this.options.authToken === 'function'
+        ? await this.options.authToken()
+        : this.options.authToken;
+      const separator = connectionUrl.includes('?') ? '&' : '?';
+      connectionUrl = `${connectionUrl}${separator}token=${encodeURIComponent(token)}`;
+    }
+
     return new Promise<void>((resolve, reject) => {
       try {
         const protocols = this.options.protocols;
-        this.ws = protocols ? new WebSocket(this.url, protocols) : new WebSocket(this.url);
+        this.ws = protocols ? new WebSocket(connectionUrl, protocols) : new WebSocket(connectionUrl);
       } catch (err) {
         this.updateState('error', err as Error);
         reject(err);

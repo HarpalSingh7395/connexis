@@ -4,6 +4,7 @@ export interface SSETransportOptions {
   publishUrl?: string;
   publish?: (topic: string, data: any) => Promise<void>;
   withCredentials?: boolean;
+  authToken?: string | (() => string | Promise<string>);
 }
 
 export class SSETransport implements Transport {
@@ -31,9 +32,18 @@ export class SSETransport implements Transport {
 
     this.updateState('connecting');
 
+    let connectionUrl = this.url;
+    if (this.options.authToken) {
+      const token = typeof this.options.authToken === 'function'
+        ? await this.options.authToken()
+        : this.options.authToken;
+      const separator = connectionUrl.includes('?') ? '&' : '?';
+      connectionUrl = `${connectionUrl}${separator}token=${encodeURIComponent(token)}`;
+    }
+
     return new Promise<void>((resolve, reject) => {
       try {
-        this.eventSource = new EventSource(this.url, {
+        this.eventSource = new EventSource(connectionUrl, {
           withCredentials: this.options.withCredentials
         });
       } catch (err) {
@@ -94,11 +104,20 @@ export class SSETransport implements Transport {
     }
 
     if (this.options.publishUrl) {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+
+      if (this.options.authToken) {
+        const token = typeof this.options.authToken === 'function'
+          ? await this.options.authToken()
+          : this.options.authToken;
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(this.options.publishUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({ topic, data })
       });
       if (!response.ok) {
