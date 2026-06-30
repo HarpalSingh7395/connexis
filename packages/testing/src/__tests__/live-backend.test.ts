@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import { createRealtimeClient } from '@connexis/core';
 import { WebSocketTransport } from '@connexis/transport-websocket';
 import { SSETransport } from '@connexis/transport-sse';
@@ -6,13 +6,32 @@ import { PollingTransport } from '@connexis/transport-polling';
 import * as ES from 'eventsource';
 
 // Resolve ESM default export wrapper for EventSource
-const EventSource = ES.EventSource || (ES as any).default || ES;
+const EventSource = (ES as any).default || ES;
 
 if (typeof globalThis.EventSource === 'undefined') {
   (globalThis as any).EventSource = EventSource;
 }
 
-describe('Aggressive Live Backend Integration Tests', () => {
+const checkBackendRunning = async (): Promise<boolean> => {
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'HealthCheck' })
+    });
+    return res.status === 200 || res.status === 201;
+  } catch {
+    return false;
+  }
+};
+
+const backendRunning = await checkBackendRunning();
+
+if (!backendRunning) {
+  console.log('⚠️ NestJS backend is not running at http://localhost:3000. Skipping live integration tests.');
+}
+
+describe.runIf(backendRunning)('Aggressive Live Backend Integration Tests', () => {
   let activeToken = '';
 
   const getValidToken = async () => {
