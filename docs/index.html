@@ -23,6 +23,7 @@
         <li><a href="#intro" class="active">Introduction</a></li>
         <li><a href="#installation">Installation</a></li>
         <li><a href="#transports">Transports</a></li>
+        <li><a href="#authentication">Authentication</a></li>
         <li><a href="#policies">Connection Policies</a></li>
         <li><a href="#coordination">Multi-Tab Coordination</a></li>
         <li><a href="#middlewares">Middlewares</a></li>
@@ -110,27 +111,39 @@ const client = createRealtimeClient({
   })
 });</code></pre>
 
-        <h3>Reconnection &amp; Token Rotation</h3>
-        <p>
-          Prevent infinite connection loops during post-handshake auth rejection (e.g., when invalid credentials close the connection instantly) and dynamically refresh expired credentials using reconnect options and asynchronous token provider callbacks:
-        </p>
-        <pre><button class="copy-btn">Copy</button><code>let cachedToken = 'initial-token';
+      </section>
 
-const client = createRealtimeClient({
-  transport: new WebSocketTransport('wss://api.example.com/events', {
-    // Asynchronous token resolver called on every connection attempt
-    authToken: async () => {
-      if (checkIfExpired(cachedToken)) {
-        cachedToken = await refreshAuthToken();
-      }
-      return cachedToken;
-    }
-  }),
+      <section id="authentication">
+        <h2>Authentication &amp; Token Rotation</h2>
+        <p>
+          <code>@connexis</code> supports client-side authentication token handling across all transport layers (WebSockets, SSE, and HTTP Polling). It provides built-in mechanisms for <strong>dynamic token rotation</strong> and <strong>connection stabilization protection</strong>.
+        </p>
+
+        <h3>1. Dynamic Token Provider Callback</h3>
+        <p>
+          Instead of passing a static string, you can provide an asynchronous callback function that returns a <code>Promise&lt;string&gt;</code>. The client will invoke this callback before every connection or reconnection attempt. This is extremely useful for automatically renewing expired JSON Web Tokens (JWT) or retrieving fresh credentials from an auth provider.
+        </p>
+        <pre><button class="copy-btn">Copy</button><code>const transport = new WebSocketTransport('wss://api.example.com/events', {
+  // Evaluated dynamically on initial connect and every retry
+  authToken: async () => {
+    const token = await fetchFreshJWT();
+    return token;
+  }
+});</code></pre>
+
+        <h3>2. Connection Stabilization Protection</h3>
+        <p>
+          In many architectures, authentication validation happens post-handshake (e.g., after a WebSocket or SSE stream is opened). When invalid credentials are supplied, the server opens the connection and immediately closes it.
+        </p>
+        <p>
+          To prevent the client from spamming the server in an infinite reconnect loop, configure the <code>stableThreshold</code> option inside <code>reconnectOptions</code>. A connection must remain open for this threshold duration (in milliseconds) before the retry attempt counter is reset to <code>0</code>.
+        </p>
+        <pre><button class="copy-btn">Copy</button><code>const client = createRealtimeClient({
+  transport,
   reconnectOptions: {
-    maxAttempts: 5,
-    delay: 1000,
-    // Connection must stay open for 5s to reset the backoff counter
-    stableThreshold: 5000 
+    maxAttempts: 5,        // Stop retrying after 5 attempts
+    delay: 1000,           // Retry every 1000ms
+    stableThreshold: 5000  // Connection must stay alive for 5s to be stable
   }
 });</code></pre>
       </section>
