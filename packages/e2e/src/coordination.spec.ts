@@ -83,4 +83,30 @@ test.describe('Connexis Multi-Tab E2E Tests', () => {
     await expect(stateVal).toHaveText('connected', { timeout: 5000 });
     await expect(connCount).toHaveText('1');
   });
+
+  test('should support authentication token resolution', async ({ page }) => {
+    page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
+    await page.goto('/');
+
+    const stateVal = page.locator('.status-row:has-text("Client Lifecycle State") .status-value');
+    const toggleBtn = page.locator('button.btn:has-text("Disconnect"), button.btn:has-text("Connect")');
+    const tokenInput = page.locator('.auth-token-input');
+    const terminalLogs = page.locator('.terminal-body');
+
+    // Wait for initial connection to settle
+    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
+
+    // 1. Enter the auth token in the input field
+    await tokenInput.fill('secret-e2e-token');
+
+    // 2. Toggle connection to reconnect and trigger token resolution
+    await toggleBtn.click(); // Disconnect
+    await expect(stateVal).toHaveText('closed', { timeout: 5000 });
+
+    await toggleBtn.click(); // Reconnect
+    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
+
+    // 3. Verify that the terminal logs contain the connection established event with the resolved token
+    await expect(terminalLogs).toContainText('Connection established with token: secret-e2e-token', { timeout: 5000 });
+  });
 });
