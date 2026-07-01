@@ -19,7 +19,7 @@ export default defineConfig({
     }
   ],
   webServer: {
-    command: 'npm run dev -- --port 5175',
+    command: 'npm run dev -- --port 5175 --force',
     url: 'http://localhost:5175',
     reuseExistingServer: true,
     cwd: '/home/harpal/Documents/personal/connexis-demo',

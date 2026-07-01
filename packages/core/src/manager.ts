@@ -22,6 +22,7 @@ interface ManagerEvents {
 export class ConnectionManager extends EventEmitter<ManagerEvents> {
   private connections = new Map<string, Connection>();
   private refCounts = new Map<string, number>();
+  private topicRefCounts = new Map<string, Map<string, number>>();
 
   // Local active subscriptions
   private subscriptions = new Map<
@@ -145,8 +146,25 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
       this.connections.set(key, connection);
       this.refCounts.set(key, 0);
 
-      connection.on('stateChange', ({ state, error }) => {
+      connection.on('stateChange', async ({ state, error }) => {
         this.emit('stateChange', { connectionKey: key, state, error });
+        if (state === 'connected') {
+          // Restore all subscriptions for this connection
+          this.logger.info('Manager', `Connection reconnected for key=${key}. Restoring subscriptions...`);
+          const matchingSubs = Array.from(this.subscriptions.values()).filter(
+            (subItem) => subItem.connectionKey === key
+          );
+          for (const subItem of matchingSubs) {
+            try {
+              const currentCount = this.topicRefCounts.get(key)?.get(subItem.subscription.topic) || 0;
+              if (currentCount > 0) {
+                await connection?.subscribe(subItem.subscription.topic, subItem.subscription.filter);
+              }
+            } catch (err) {
+              this.logger.error('Manager', `Failed to restore subscription ${subItem.subscription.topic}`, err);
+            }
+          }
+        }
       });
 
       connection.on('message', ({ topic, data }) => {
@@ -177,32 +195,37 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
       }
     });
 
-    if (connection.state === 'connected') {
-      await connection.subscribe(subscription.topic, subscription.filter);
-    } else {
-      const unsubState = connection.on('stateChange', async ({ state }) => {
-        if (state === 'connected') {
-          await connection?.subscribe(subscription.topic, subscription.filter);
-          unsubState();
-        }
-      });
+    let topicMap = this.topicRefCounts.get(key);
+    if (!topicMap) {
+      topicMap = new Map<string, number>();
+      this.topicRefCounts.set(key, topicMap);
     }
+    const topicCount = topicMap.get(subscription.topic) || 0;
+    topicMap.set(subscription.topic, topicCount + 1);
 
     const unsubDirect = async () => {
       removeMessageListener();
       const connection = this.connections.get(key);
       if (connection) {
-        try {
-          await connection.unsubscribe(subscription.topic, subscription.filter);
-        } catch (err) {
-          // ignore
+        const topicMap = this.topicRefCounts.get(key);
+        if (topicMap) {
+          const currentCount = topicMap.get(subscription.topic) || 0;
+          const nextCount = Math.max(0, currentCount - 1);
+          topicMap.set(subscription.topic, nextCount);
+          if (nextCount === 0) {
+            try {
+              await connection.unsubscribe(subscription.topic, subscription.filter);
+            } catch (err) {
+              // ignore
+            }
+          }
         }
         const refs = (this.refCounts.get(key) || 1) - 1;
         this.refCounts.set(key, refs);
-
         if (refs <= 0) {
           this.connections.delete(key);
           this.refCounts.delete(key);
+          this.topicRefCounts.delete(key);
           await connection.disconnect();
           connection.destroy();
         }
@@ -215,6 +238,10 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
       handler,
       unsubDirect
     });
+
+    if (topicCount === 0 && connection.state === 'connected') {
+      await connection.subscribe(subscription.topic, subscription.filter);
+    }
 
     return unsubDirect;
   }
@@ -280,9 +307,7 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
         this.subscriptions.clear();
 
         for (const subItem of subsToRecreate) {
-          const unsub = await this.subscribeDirect(subItem.subscription, subItem.handler);
-          subItem.unsubDirect = unsub;
-          this.subscriptions.set(subItem.subscription.id, subItem);
+          await this.subscribeDirect(subItem.subscription, subItem.handler);
         }
       } else {
         // Promoted to follower: tear down all direct connections, resend subs to new leader

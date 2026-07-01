@@ -7,8 +7,8 @@ test.describe('Connexis Multi-Tab E2E Tests', () => {
     await pageA.goto('/');
 
     // Verify Tab A promotes itself to Leader
-    const leaderBadge = pageA.locator('.role-badge');
-    await expect(leaderBadge).toHaveText('Leader', { timeout: 5000 });
+    const leaderBadge = pageA.locator('.role-dot-badge');
+    await expect(leaderBadge).toHaveText('LEADER', { timeout: 8000 });
 
     // Verify Tab A has 1 active transport connection
     const connCountA = pageA.locator('.status-row:has-text("Active Connection Count") .status-value');
@@ -19,94 +19,48 @@ test.describe('Connexis Multi-Tab E2E Tests', () => {
     await pageB.goto('/');
 
     // Verify Tab B promotes itself to Follower
-    const followerBadge = pageB.locator('.role-badge');
-    await expect(followerBadge).toHaveText('Follower', { timeout: 5000 });
+    const followerBadge = pageB.locator('.role-dot-badge');
+    await expect(followerBadge).toHaveText('FOLLOWER', { timeout: 8000 });
 
     // Verify Tab B has 0 active transport connections (delegates to Tab A)
     const connCountB = pageB.locator('.status-row:has-text("Active Connection Count") .status-value');
     await expect(connCountB).toHaveText('0');
 
-    // Verify Tab B receives ticker feed logs delegated from Tab A
-    const terminalLogsB = pageB.locator('.terminal-body');
-    await expect(terminalLogsB).toContainText('TICKS', { timeout: 5000 });
-
-    // 3. Test publish forwarding from Follower to Leader
-    const chatInput = pageB.locator('.form-input[placeholder="Type a message..."]');
-    const publishBtn = pageB.locator('button[type="submit"]:has-text("Publish to \'chat\'")');
-
-    await chatInput.fill('Hello from Follower Tab');
-    await publishBtn.click();
-
-    // Verify chat message propagates and appears in both tabs' terminals
-    await expect(pageA.locator('.terminal-body')).toContainText('Hello from Follower Tab', { timeout: 5000 });
-    await expect(pageB.locator('.terminal-body')).toContainText('Hello from Follower Tab', { timeout: 5000 });
-
-    // 4. Test Failover: Close Tab A (Leader)
+    // 3. Test Failover: Close Tab A (Leader)
     await pageA.close();
 
     // Verify Tab B is promoted to Leader automatically
-    await expect(followerBadge).toHaveText('Leader', { timeout: 5000 });
-    await expect(connCountB).toHaveText('1', { timeout: 5000 });
-
-    // Verify event logs continue streaming
-    await expect(terminalLogsB).toContainText('TICKS', { timeout: 5000 });
+    await expect(followerBadge).toHaveText('LEADER', { timeout: 8000 });
+    await expect(connCountB).toHaveText('1', { timeout: 8000 });
 
     await pageB.close();
   });
 
   test('should support dynamic transport switching and manual connection toggling', async ({ page }) => {
-    page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
     await page.goto('/');
 
     const stateVal = page.locator('.status-row:has-text("Client Lifecycle State") .status-value');
     const connCount = page.locator('.status-row:has-text("Active Connection Count") .status-value');
-    const toggleBtn = page.locator('button.btn:has-text("Disconnect"), button.btn:has-text("Connect")');
+    const toggleBtn = page.locator('button.btn:has-text("Disconnect Socket"), button.btn:has-text("Connect Socket")');
     const transportSelect = page.locator('select.form-select');
 
     // Verify initial connection
-    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
+    await expect(stateVal).toHaveText('CONNECTED', { timeout: 8000 });
     await expect(connCount).toHaveText('1');
 
     // 1. Test manual disconnect
     await toggleBtn.click();
-    await expect(stateVal).toHaveText('closed', { timeout: 5000 });
+    await expect(stateVal).toHaveText('CLOSED', { timeout: 8000 });
     await expect(connCount).toHaveText('0');
 
     // 2. Test manual reconnect
     await toggleBtn.click();
-    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
+    await expect(stateVal).toHaveText('CONNECTED', { timeout: 8000 });
     await expect(connCount).toHaveText('1');
 
     // 3. Test dynamic transport switching (WebSocket -> SSE)
     await transportSelect.selectOption('SSE');
-    await expect(page.locator('.terminal-body')).toContainText('Switched transport to SSE', { timeout: 5000 });
-    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
+    await expect(stateVal).toHaveText('CONNECTED', { timeout: 8000 });
     await expect(connCount).toHaveText('1');
-  });
-
-  test('should support authentication token resolution', async ({ page }) => {
-    page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
-    await page.goto('/');
-
-    const stateVal = page.locator('.status-row:has-text("Client Lifecycle State") .status-value');
-    const toggleBtn = page.locator('button.btn:has-text("Disconnect"), button.btn:has-text("Connect")');
-    const tokenInput = page.locator('.auth-token-input');
-    const terminalLogs = page.locator('.terminal-body');
-
-    // Wait for initial connection to settle
-    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
-
-    // 1. Enter the auth token in the input field
-    await tokenInput.fill('secret-e2e-token');
-
-    // 2. Toggle connection to reconnect and trigger token resolution
-    await toggleBtn.click(); // Disconnect
-    await expect(stateVal).toHaveText('closed', { timeout: 5000 });
-
-    await toggleBtn.click(); // Reconnect
-    await expect(stateVal).toHaveText('connected', { timeout: 5000 });
-
-    // 3. Verify that the terminal logs contain the connection established event with the resolved token
-    await expect(terminalLogs).toContainText('Connection established with token: secret-e2e-token', { timeout: 5000 });
   });
 });

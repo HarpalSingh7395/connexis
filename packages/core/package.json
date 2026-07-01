@@ -1,6 +1,6 @@
 {
   "name": "@connexis/core",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Core connection and subscription management for @connexis",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
