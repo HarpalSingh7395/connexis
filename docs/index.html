@@ -21,6 +21,7 @@
       
       <ul class="nav-links">
         <li><a href="#intro" class="active">Introduction</a></li>
+        <li><a href="#simulator">Multi-Tab Simulator</a></li>
         <li><a href="#installation">Installation</a></li>
         <li><a href="#transports">Transports</a></li>
         <li><a href="#authentication">Authentication</a></li>
@@ -28,6 +29,7 @@
         <li><a href="#coordination">Multi-Tab Coordination</a></li>
         <li><a href="#middlewares">Middlewares</a></li>
         <li><a href="#react">React Wrapper</a></li>
+        <li><a href="#react-demo">React App Demo</a></li>
         <li><a href="#api-reference">API Reference</a></li>
         <li><a href="#benchmarks">Benchmarks & Stress Tests</a></li>
       </ul>
@@ -61,6 +63,85 @@
             <div class="feature-icon">⚖️</div>
             <h3>Policy Driven</h3>
             <p>Control transport sharing using Isolated, Shared, Hybrid, or custom policies based on topic and filter properties.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Multi-Tab Simulator Section -->
+      <section id="simulator">
+        <h2>Multi-Tab Coordination Simulator</h2>
+        <p>
+          See `@connexis` multi-tab leader election and failover sequence in action. Followers dynamically delegate coordination to the elected leader, minimizing socket connections.
+        </p>
+        
+        <div class="sim-container">
+          <div class="sim-header">
+            <div class="sim-title-group">
+              <h3>Live Coordination Status</h3>
+              <p>Interaction demonstrates Leader promotion and subscription routing fallback</p>
+            </div>
+            <div class="sim-controls">
+              <button class="sim-btn danger" id="killLeaderBtn">⚡ Kill Leader (Tab A)</button>
+              <button class="sim-btn" id="pubMessageBtn">📥 Publish Event</button>
+              <button class="sim-btn" id="resetSimBtn">🔄 Reset Demo</button>
+            </div>
+          </div>
+
+          <div class="sim-visualizer">
+            <!-- Simulated Browser Tabs -->
+            <div class="sim-tabs">
+              <!-- Tab A -->
+              <div class="sim-tab-card active-leader" id="tabA">
+                <span class="sim-badge leader" id="tabABadge">Leader</span>
+                <div class="sim-tab-name">Tab A (10s old)</div>
+                <div class="sim-tab-state" id="tabAState">connected</div>
+                <div class="sim-tab-desc">Maintains socket connection with server. Receives messages from siblings.</div>
+              </div>
+              <!-- Tab B -->
+              <div class="sim-tab-card active-follower" id="tabB">
+                <span class="sim-badge follower" id="tabBBadge">Follower</span>
+                <div class="sim-tab-name">Tab B (5s old)</div>
+                <div class="sim-tab-state" id="tabBState">shared (A)</div>
+                <div class="sim-tab-desc">Delegates subscriptions to Leader via BroadcastChannel.</div>
+              </div>
+              <!-- Tab C -->
+              <div class="sim-tab-card active-follower" id="tabC">
+                <span class="sim-badge follower" id="tabCBadge">Follower</span>
+                <div class="sim-tab-name">Tab C (1s old)</div>
+                <div class="sim-tab-state" id="tabCState">shared (A)</div>
+                <div class="sim-tab-desc">Delegates subscriptions to Leader via BroadcastChannel.</div>
+              </div>
+            </div>
+
+            <!-- SVG connection routes -->
+            <svg class="sim-lines" viewBox="0 0 800 300" preserveAspectRatio="none">
+              <!-- Tab paths to Server/Leader -->
+              <path id="pathBtoA" class="sim-connection-path active-route" d="M 400 100 L 130 100" />
+              <path id="pathCtoA" class="sim-connection-path active-route" d="M 660 100 L 130 100" />
+              <path id="pathLeaderToServer" class="sim-connection-path leader-route" d="M 130 140 L 400 230" />
+              
+              <!-- Alternative Routes (Initially hidden/inactive) -->
+              <path id="pathCtoB" class="sim-connection-path" d="M 660 100 L 400 100" />
+              <path id="pathFollowerToServer" class="sim-connection-path" d="M 400 140 L 400 230" />
+              
+              <!-- Glowing message pulses -->
+              <circle id="pulse1" class="sim-pulse" cx="0" cy="0" r="0" />
+              <circle id="pulse2" class="sim-pulse" cx="0" cy="0" r="0" />
+            </svg>
+
+            <!-- Realtime Server Node -->
+            <div class="sim-server connected-server" id="serverNode">
+              <div class="sim-server-icon">🖥️</div>
+              <div class="sim-server-name">Realtime Server</div>
+              <div class="sim-server-status" id="serverStatus">1 active socket</div>
+            </div>
+          </div>
+
+          <!-- Console logging output -->
+          <div class="sim-console" id="simConsole">
+            <div class="sim-console-line"><span class="sim-console-time">[21:44:00]</span> Initialized coordination manager namespace: my_app</div>
+            <div class="sim-console-line"><span class="sim-console-time">[21:44:01]</span> Tab A elected as LEADER (oldest tab)</div>
+            <div class="sim-console-line"><span class="sim-console-time">[21:44:01]</span> Tab A opened WebSocket connection to wss://api.example.com/events</div>
           </div>
         </div>
       </section>
@@ -275,6 +356,141 @@ function Dashboard() {
 }</code></pre>
       </section>
 
+      <!-- React App Demo Section -->
+      <section id="react-demo">
+        <h2>React App Demo: Collaborative Kanban Dashboard</h2>
+        <p>
+          Here is a complete, production-grade example of a React application built using <code>@connexis/react</code>. It showcases real-time Kanban column task movement synchronized automatically across multiple browser tabs using a shared connection.
+        </p>
+
+        <pre><button class="copy-btn">Copy</button><code>import React, { useState } from 'react';
+import { RealtimeProvider, useConnection, useSubscription, usePublish } from '@connexis/react';
+import { createRealtimeClient } from '@connexis/core';
+import { WebSocketTransport } from '@connexis/transport-websocket';
+import { Coordinator } from '@connexis/coordinator';
+
+// 1. Client setup file (client.js)
+export const realtimeClient = createRealtimeClient({
+  transport: new WebSocketTransport('wss://api.example.com/kanban'),
+  connectionPolicy: 'shared',
+  coordinator: new Coordinator('kanban_board_app'),
+  debug: true
+});
+
+// 2. React Components (App.jsx)
+interface KanbanCard {
+  id: string;
+  title: string;
+  column: 'todo' | 'progress' | 'done';
+}
+
+function KanbanBoard() {
+  const { state, metrics } = useConnection();
+  const publish = usePublish();
+  const [cards, setCards] = useState<KanbanCard[]>([
+    { id: '1', title: 'Design DB schema', column: 'todo' },
+    { id: '2', title: 'Implement auth pipeline', column: 'progress' },
+    { id: '3', title: 'Write Playwright tests', column: 'done' }
+  ]);
+
+  // Synchronize board changes from other tabs / server
+  useSubscription('kanban_moves', (payload: { id: string; targetColumn: 'todo' | 'progress' | 'done' }) => {
+    setCards((prevCards) =>
+      prevCards.map((card) =>
+        card.id === payload.id ? { ...card, column: payload.targetColumn } : card
+      )
+    );
+  });
+
+  const moveCard = async (id: string, targetColumn: 'todo' | 'progress' | 'done') => {
+    // Optimistic update locally
+    setCards((prevCards) =>
+      prevCards.map((card) =>
+        card.id === id ? { ...card, column: targetColumn } : card
+      )
+    );
+
+    // Broadcast card move event to server & sibling tabs
+    await publish('kanban_moves', { id, targetColumn });
+  };
+
+  return (
+    <div className="kanban-container" style={{ padding: '20px', fontFamily: 'system-ui' }}>
+      <div className="header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <h2>Kanban Board</h2>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <span style={{
+            padding: '5px 10px',
+            borderRadius: '12px',
+            fontSize: '0.85em',
+            background: state === 'connected' ? '#d1fae5' : '#fee2e2',
+            color: state === 'connected' ? '#065f46' : '#991b1b'
+          }}>
+            🔌 {state.toUpperCase()}
+          </span>
+          <span style={{ fontSize: '0.9em', color: '#6b7280' }}>
+            RTT: {metrics.latency.toFixed(0)}ms | Tabs: {metrics.connectionCount}
+          </span>
+        </div>
+      </div>
+
+      <div className="columns" style={{ display: 'flex', gap: '20px' }}>
+        {(['todo', 'progress', 'done'] as const).map((columnName) => (
+          <div key={columnName} style={{
+            flex: 1,
+            background: '#f3f4f6',
+            borderRadius: '8px',
+            padding: '15px',
+            minHeight: '300px'
+          }}>
+            <h3 style={{ textTransform: 'capitalize', marginTop: 0 }}>{columnName}</h3>
+            {cards.filter(c => c.column === columnName).map(card => (
+              <div key={card.id} style={{
+                background: 'white',
+                padding: '12px',
+                borderRadius: '6px',
+                marginBottom: '10px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}>
+                <div style={{ fontWeight: '500', marginBottom: '8px' }}>{card.title}</div>
+                <div style={{ display: 'flex', gap: '5px' }}>
+                  {columnName !== 'todo' && (
+                    <button onClick={() => moveCard(card.id, 'todo')} style={btnStyle}>↩ To Do</button>
+                  )}
+                  {columnName !== 'progress' && (
+                    <button onClick={() => moveCard(card.id, 'progress')} style={btnStyle}>➔ Progress</button>
+                  )}
+                  {columnName !== 'done' && (
+                    <button onClick={() => moveCard(card.id, 'done')} style={btnStyle}>✓ Done</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const btnStyle = {
+  background: '#e5e7eb',
+  border: 'none',
+  padding: '4px 8px',
+  borderRadius: '4px',
+  fontSize: '0.75em',
+  cursor: 'pointer'
+};
+
+export default function App() {
+  return (
+    <RealtimeProvider client={realtimeClient}>
+      <KanbanBoard />
+    </RealtimeProvider>
+  );
+}</code></pre>
+      </section>
+
       <section id="api-reference">
         <h2>API Reference</h2>
         
@@ -447,6 +663,177 @@ client.on('metricsChange', (metrics) => {
           link.classList.add('active');
         }
       });
+    });
+
+    // --- Interactive Multi-Tab Simulator Logic ---
+    const tabA = document.getElementById('tabA');
+    const tabB = document.getElementById('tabB');
+    const tabC = document.getElementById('tabC');
+    const tabABadge = document.getElementById('tabABadge');
+    const tabBBadge = document.getElementById('tabBBadge');
+    const tabCBadge = document.getElementById('tabCBadge');
+    const tabAState = document.getElementById('tabAState');
+    const tabBState = document.getElementById('tabBState');
+    const tabCState = document.getElementById('tabCState');
+    
+    const pathBtoA = document.getElementById('pathBtoA');
+    const pathCtoA = document.getElementById('pathCtoA');
+    const pathLeaderToServer = document.getElementById('pathLeaderToServer');
+    const pathCtoB = document.getElementById('pathCtoB');
+    const pathFollowerToServer = document.getElementById('pathFollowerToServer');
+    
+    const pulse1 = document.getElementById('pulse1');
+    const pulse2 = document.getElementById('pulse2');
+    
+    const serverNode = document.getElementById('serverNode');
+    const serverStatus = document.getElementById('serverStatus');
+    const consoleBox = document.getElementById('simConsole');
+    
+    const killLeaderBtn = document.getElementById('killLeaderBtn');
+    const pubMessageBtn = document.getElementById('pubMessageBtn');
+    const resetSimBtn = document.getElementById('resetSimBtn');
+    
+    let isLeaderAlive = true;
+    
+    function logToSimConsole(msg) {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      const line = document.createElement('div');
+      line.className = 'sim-console-line';
+      line.innerHTML = `<span class="sim-console-time">[${timeStr}]</span> ${msg}`;
+      consoleBox.appendChild(line);
+      consoleBox.scrollTop = consoleBox.scrollHeight;
+    }
+    
+    function animatePulse(startPath, endPath, callback) {
+      // Small simulated pulse animation on SVG paths
+      let progress = 0;
+      const len = startPath.getTotalLength();
+      
+      function step() {
+        progress += 0.05;
+        if (progress <= 1) {
+          const pt = startPath.getPointAtLength(progress * len);
+          pulse1.setAttribute('cx', pt.x);
+          pulse1.setAttribute('cy', pt.y);
+          pulse1.setAttribute('r', 5);
+          requestAnimationFrame(step);
+        } else {
+          pulse1.setAttribute('r', 0);
+          if (endPath) {
+            let progress2 = 0;
+            const len2 = endPath.getTotalLength();
+            function step2() {
+              progress2 += 0.05;
+              if (progress2 <= 1) {
+                const pt = endPath.getPointAtLength(progress2 * len2);
+                pulse2.setAttribute('cx', pt.x);
+                pulse2.setAttribute('cy', pt.y);
+                pulse2.setAttribute('r', 5);
+                requestAnimationFrame(step2);
+              } else {
+                pulse2.setAttribute('r', 0);
+                if (callback) callback();
+              }
+            }
+            requestAnimationFrame(step2);
+          } else {
+            if (callback) callback();
+          }
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    killLeaderBtn.addEventListener('click', () => {
+      if (!isLeaderAlive) return;
+      isLeaderAlive = false;
+      
+      // Update UI for Tab A
+      tabA.classList.remove('active-leader');
+      tabA.classList.add('closed-tab');
+      tabABadge.className = 'sim-badge offline';
+      tabABadge.innerText = 'offline';
+      tabAState.innerText = 'closed';
+      
+      logToSimConsole('Leader Tab A closed by user');
+      logToSimConsole('Tab B detects leader exit via BroadcastChannel');
+      logToSimConsole('Starting leader election (Tab B age: 5s, Tab C age: 1s)');
+      
+      // Path updates
+      pathLeaderToServer.classList.remove('leader-route');
+      pathBtoA.classList.remove('active-route');
+      pathCtoA.classList.remove('active-route');
+      
+      setTimeout(() => {
+        // Tab B wins election
+        tabB.classList.remove('active-follower');
+        tabB.classList.add('active-leader');
+        tabBBadge.className = 'sim-badge leader';
+        tabBBadge.innerText = 'Leader';
+        tabBState.innerText = 'connected';
+        
+        // Tab C follows Tab B
+        tabCBadge.innerText = 'Follower';
+        tabCState.innerText = 'shared (B)';
+        
+        // Connect paths
+        pathFollowerToServer.classList.add('leader-route');
+        pathCtoB.classList.add('active-route');
+        
+        serverStatus.innerText = '1 active socket';
+        
+        logToSimConsole('Tab B promoted to LEADER');
+        logToSimConsole('Tab B opened new socket connection to wss://api.example.com/events');
+        logToSimConsole('Tab C coordinated connection to Tab B');
+      }, 1000);
+    });
+    
+    pubMessageBtn.addEventListener('click', () => {
+      if (isLeaderAlive) {
+        logToSimConsole('Tab C publishing event "user_click"');
+        animatePulse(pathCtoA, pathLeaderToServer, () => {
+          logToSimConsole('Server processed event "user_click" successfully');
+        });
+      } else {
+        logToSimConsole('Tab C publishing event "user_click"');
+        animatePulse(pathCtoB, pathFollowerToServer, () => {
+          logToSimConsole('Server processed event "user_click" successfully');
+        });
+      }
+    });
+
+    resetSimBtn.addEventListener('click', () => {
+      isLeaderAlive = true;
+      
+      // Restores Tab A
+      tabA.className = 'sim-tab-card active-leader';
+      tabABadge.className = 'sim-badge leader';
+      tabABadge.innerText = 'Leader';
+      tabAState.innerText = 'connected';
+      
+      // Restores Tab B
+      tabB.className = 'sim-tab-card active-follower';
+      tabBBadge.className = 'sim-badge follower';
+      tabBBadge.innerText = 'Follower';
+      tabBState.innerText = 'shared (A)';
+      
+      // Restores Tab C
+      tabC.className = 'sim-tab-card active-follower';
+      tabCBadge.className = 'sim-badge follower';
+      tabCBadge.innerText = 'Follower';
+      tabCState.innerText = 'shared (A)';
+      
+      // Reset routes
+      pathBtoA.className = 'sim-connection-path active-route';
+      pathCtoA.className = 'sim-connection-path active-route';
+      pathLeaderToServer.className = 'sim-connection-path leader-route';
+      pathCtoB.className = 'sim-connection-path';
+      pathFollowerToServer.className = 'sim-connection-path';
+      
+      serverStatus.innerText = '1 active socket';
+      
+      logToSimConsole('Demo reset. Tab A re-promoted to Leader.');
     });
   </script>
 </body>
