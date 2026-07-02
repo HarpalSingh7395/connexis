@@ -315,9 +315,9 @@ import { client } from './client';
 
 function App() {
   return (
-    <RealtimeProvider client={client}>
-      <Dashboard />
-    </RealtimeProvider>
+    &lt;RealtimeProvider client={client}&gt;
+      &lt;Dashboard /&gt;
+    &lt;/RealtimeProvider&gt;
   );
 }</code></pre>
 
@@ -344,14 +344,14 @@ function Dashboard() {
   });
 
   return (
-    <div>
-      <h3>Status: {state}</h3>
-      <p>Latency: {metrics.latency.toFixed(1)} ms</p>
-      <p>Throughput (Inbound): {metrics.throughput.inbound} msg/s</p>
-      <button onClick={() => publish('alerts', { text: 'Emergency Alert' })}>
+    &lt;div&gt;
+      &lt;h3&gt;Status: {state}&lt;/h3&gt;
+      &lt;p&gt;Latency: {metrics.latency.toFixed(1)} ms&lt;/p&gt;
+      &lt;p&gt;Throughput (Inbound): {metrics.throughput.inbound} msg/s&lt;/p&gt;
+      &lt;button onClick={() =&gt; publish('alerts', { text: 'Emergency Alert' })}&gt;
         Broadcast Alert
-      </button>
-    </div>
+      &lt;/button&gt;
+    &lt;/div&gt;
   );
 }</code></pre>
       </section>
@@ -387,7 +387,7 @@ interface KanbanCard {
 function KanbanBoard() {
   const { state, metrics } = useConnection();
   const publish = usePublish();
-  const [cards, setCards] = useState<KanbanCard[]>([
+  const [cards, setCards] = useState&lt;KanbanCard[]&gt;([
     { id: '1', title: 'Design DB schema', column: 'todo' },
     { id: '2', title: 'Implement auth pipeline', column: 'progress' },
     { id: '3', title: 'Write Playwright tests', column: 'done' }
@@ -410,66 +410,66 @@ function KanbanBoard() {
       )
     );
 
-    // Broadcast card move event to server & sibling tabs
+    // Broadcast card move event to server &amp; sibling tabs
     await publish('kanban_moves', { id, targetColumn });
   };
 
   return (
-    <div className="kanban-container" style={{ padding: '20px', fontFamily: 'system-ui' }}>
-      <div className="header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h2>Kanban Board</h2>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <span style={{
+    &lt;div className="kanban-container" style={{ padding: '20px', fontFamily: 'system-ui' }}&gt;
+      &lt;div className="header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}&gt;
+        &lt;h2&gt;Kanban Board&lt;/h2&gt;
+        &lt;div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}&gt;
+          &lt;span style={{
             padding: '5px 10px',
             borderRadius: '12px',
             fontSize: '0.85em',
             background: state === 'connected' ? '#d1fae5' : '#fee2e2',
             color: state === 'connected' ? '#065f46' : '#991b1b'
-          }}>
+          }}&gt;
             🔌 {state.toUpperCase()}
-          </span>
-          <span style={{ fontSize: '0.9em', color: '#6b7280' }}>
+          &lt;/span&gt;
+          &lt;span style={{ fontSize: '0.9em', color: '#6b7280' }}&gt;
             RTT: {metrics.latency.toFixed(0)}ms | Tabs: {metrics.connectionCount}
-          </span>
-        </div>
-      </div>
+          &lt;/span&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
 
-      <div className="columns" style={{ display: 'flex', gap: '20px' }}>
-        {(['todo', 'progress', 'done'] as const).map((columnName) => (
-          <div key={columnName} style={{
+      &lt;div className="columns" style={{ display: 'flex', gap: '20px' }}&gt;
+        {([&apos;todo&apos;, &apos;progress&apos;, &apos;done&apos;] as const).map((columnName) => (
+          &lt;div key={columnName} style={{
             flex: 1,
             background: '#f3f4f6',
             borderRadius: '8px',
             padding: '15px',
             minHeight: '300px'
-          }}>
-            <h3 style={{ textTransform: 'capitalize', marginTop: 0 }}>{columnName}</h3>
-            {cards.filter(c => c.column === columnName).map(card => (
-              <div key={card.id} style={{
+          }}&gt;
+            &lt;h3 style={{ textTransform: 'capitalize', marginTop: 0 }}&gt;{columnName}&lt;/h3&gt;
+            {cards.filter(c =&gt; c.column === columnName).map(card =&gt; (
+              &lt;div key={card.id} style={{
                 background: 'white',
                 padding: '12px',
                 borderRadius: '6px',
                 marginBottom: '10px',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ fontWeight: '500', marginBottom: '8px' }}>{card.title}</div>
-                <div style={{ display: 'flex', gap: '5px' }}>
+              }}&gt;
+                &lt;div style={{ fontWeight: '500', marginBottom: '8px' }}&gt;{card.title}&lt;/div&gt;
+                &lt;div style={{ display: 'flex', gap: '5px' }}&gt;
                   {columnName !== 'todo' && (
-                    <button onClick={() => moveCard(card.id, 'todo')} style={btnStyle}>↩ To Do</button>
+                    &lt;button onClick={() =&gt; moveCard(card.id, 'todo')} style={btnStyle}&gt;↩ To Do&lt;/button&gt;
                   )}
                   {columnName !== 'progress' && (
-                    <button onClick={() => moveCard(card.id, 'progress')} style={btnStyle}>➔ Progress</button>
+                    &lt;button onClick={() =&gt; moveCard(card.id, 'progress')} style={btnStyle}&gt;➔ Progress&lt;/button&gt;
                   )}
                   {columnName !== 'done' && (
-                    <button onClick={() => moveCard(card.id, 'done')} style={btnStyle}>✓ Done</button>
+                    &lt;button onClick={() =&gt; moveCard(card.id, 'done')} style={btnStyle}&gt;✓ Done&lt;/button&gt;
                   )}
-                </div>
-              </div>
+                &lt;/div&gt;
+              &lt;/div&gt;
             ))}
-          </div>
+          &lt;/div&gt;
         ))}
-      </div>
-    </div>
+      &lt;/div&gt;
+    &lt;/div&gt;
   );
 }
 
@@ -484,9 +484,9 @@ const btnStyle = {
 
 export default function App() {
   return (
-    <RealtimeProvider client={realtimeClient}>
-      <KanbanBoard />
-    </RealtimeProvider>
+    &lt;RealtimeProvider client={realtimeClient}&gt;
+      &lt;KanbanBoard /&gt;
+    &lt;/RealtimeProvider&gt;
   );
 }</code></pre>
       </section>
