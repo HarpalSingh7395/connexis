@@ -3,25 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>@connexis - Universal Realtime Client Developer Guide</title>
+  <title>@connexis - Universal Browser Realtime Client Developer Guide</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <button class="mobile-nav-toggle" id="menuToggle">☰</button>
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div class="logo-badge" style="width: 30px; height: 30px; border-radius: 8px; font-size: 0.9rem;">C</div>
+      <span class="logo-title" style="font-size: 1.3rem;">@connexis</span>
+    </div>
+    <button class="action-btn" id="menuToggle" style="padding: 0.4rem 0.8rem;">☰ Menu</button>
+  </header>
 
-  <div class="container">
+  <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-      <div class="logo-container">
-        <div class="logo-icon">C</div>
-        <span class="logo-text">@connexis</span>
+      <div class="logo-group">
+        <div class="logo-badge">C</div>
+        <span class="logo-text" style="display:none;"></span>
+        <span class="logo-title">@connexis</span>
       </div>
       
-      <input type="text" class="search-box" id="searchBox" placeholder="Search docs...">
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="searchBox" placeholder="Search developer docs...">
+      </div>
       
-      <ul class="nav-links">
+      <ul class="nav-menu">
         <li><a href="#intro" class="active">Introduction</a></li>
-        <li><a href="#simulator">Multi-Tab Simulator</a></li>
+        <li><a href="#playground">Multi-Tab Playground</a></li>
         <li><a href="#installation">Installation</a></li>
         <li><a href="#transports">Transports</a></li>
         <li><a href="#authentication">Authentication</a></li>
@@ -36,10 +47,13 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="main-content">
+    <main class="content-wrapper">
       <section id="intro">
-        <span class="badge">v1.0.4</span>
-        <span class="badge purple">MIT License</span>
+        <div style="margin-bottom: 1.5rem;">
+          <span class="status-badge">v1.0.4</span>
+          <span class="status-badge purple">MIT License</span>
+          <span class="status-badge cyan">TypeScript First</span>
+        </div>
         <h1>Universal Realtime Connection Manager</h1>
         <p>
           <strong>@connexis</strong> is a production-ready, framework-agnostic realtime client library designed to act as a connection manager for browser realtime transports.
@@ -50,17 +64,17 @@
         
         <div class="feature-grid">
           <div class="feature-card">
-            <div class="feature-icon">🔌</div>
+            <div class="feature-icon-wrapper">🔌</div>
             <h3>Transport Agnostic</h3>
             <p>Direct support for WebSocket, EventSource (SSE), and HTTP Polling with automatic connection failover.</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">👥</div>
+            <div class="feature-icon-wrapper">👥</div>
             <h3>Multi-Tab Sharing</h3>
             <p>Elected leader tab maintains the network socket; followers delegate subscriptions via BroadcastChannel/SharedWorker.</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">⚖️</div>
+            <div class="feature-icon-wrapper">⚖️</div>
             <h3>Policy Driven</h3>
             <p>Control transport sharing using Isolated, Shared, Hybrid, or custom policies based on topic and filter properties.</p>
           </div>
@@ -68,80 +82,80 @@
       </section>
 
       <!-- Multi-Tab Simulator Section -->
-      <section id="simulator">
+      <section id="playground">
         <h2>Multi-Tab Coordination Simulator</h2>
         <p>
           See `@connexis` multi-tab leader election and failover sequence in action. Followers dynamically delegate coordination to the elected leader, minimizing socket connections.
         </p>
         
-        <div class="sim-container">
-          <div class="sim-header">
-            <div class="sim-title-group">
+        <div class="playground-container">
+          <div class="playground-header">
+            <div class="playground-title-group">
               <h3>Live Coordination Status</h3>
               <p>Interaction demonstrates Leader promotion and subscription routing fallback</p>
             </div>
-            <div class="sim-controls">
-              <button class="sim-btn danger" id="killLeaderBtn">⚡ Kill Leader (Tab A)</button>
-              <button class="sim-btn" id="pubMessageBtn">📥 Publish Event</button>
-              <button class="sim-btn" id="resetSimBtn">🔄 Reset Demo</button>
+            <div class="playground-actions">
+              <button class="action-btn danger" id="killLeaderBtn">⚡ Kill Leader (Tab A)</button>
+              <button class="action-btn" id="pubMessageBtn">📥 Publish Event</button>
+              <button class="action-btn" id="resetSimBtn">🔄 Reset Demo</button>
             </div>
           </div>
 
-          <div class="sim-visualizer">
+          <div class="playground-body">
             <!-- Simulated Browser Tabs -->
-            <div class="sim-tabs">
+            <div class="tabs-row">
               <!-- Tab A -->
-              <div class="sim-tab-card active-leader" id="tabA">
-                <span class="sim-badge leader" id="tabABadge">Leader</span>
-                <div class="sim-tab-name">Tab A (10s old)</div>
-                <div class="sim-tab-state" id="tabAState">connected</div>
-                <div class="sim-tab-desc">Maintains socket connection with server. Receives messages from siblings.</div>
+              <div class="tab-node leader-active" id="tabA">
+                <span class="node-badge leader" id="tabABadge">Leader</span>
+                <div class="node-title">Tab A (10s old)</div>
+                <div class="node-meta" id="tabAState">connected</div>
+                <div class="node-desc">Maintains socket connection with server. Receives messages from siblings.</div>
               </div>
               <!-- Tab B -->
-              <div class="sim-tab-card active-follower" id="tabB">
-                <span class="sim-badge follower" id="tabBBadge">Follower</span>
-                <div class="sim-tab-name">Tab B (5s old)</div>
-                <div class="sim-tab-state" id="tabBState">shared (A)</div>
-                <div class="sim-tab-desc">Delegates subscriptions to Leader via BroadcastChannel.</div>
+              <div class="tab-node follower-active" id="tabB">
+                <span class="node-badge follower" id="tabBBadge">Follower</span>
+                <div class="node-title">Tab B (5s old)</div>
+                <div class="node-meta" id="tabBState">shared (A)</div>
+                <div class="node-desc">Delegates subscriptions to Leader via BroadcastChannel.</div>
               </div>
               <!-- Tab C -->
-              <div class="sim-tab-card active-follower" id="tabC">
-                <span class="sim-badge follower" id="tabCBadge">Follower</span>
-                <div class="sim-tab-name">Tab C (1s old)</div>
-                <div class="sim-tab-state" id="tabCState">shared (A)</div>
-                <div class="sim-tab-desc">Delegates subscriptions to Leader via BroadcastChannel.</div>
+              <div class="tab-node follower-active" id="tabC">
+                <span class="node-badge follower" id="tabCBadge">Follower</span>
+                <div class="node-title">Tab C (1s old)</div>
+                <div class="node-meta" id="tabCState">shared (A)</div>
+                <div class="node-desc">Delegates subscriptions to Leader via BroadcastChannel.</div>
               </div>
             </div>
 
             <!-- SVG connection routes -->
-            <svg class="sim-lines" viewBox="0 0 800 300" preserveAspectRatio="none">
+            <svg class="connections-svg" viewBox="0 0 800 300" preserveAspectRatio="none">
               <!-- Tab paths to Server/Leader -->
-              <path id="pathBtoA" class="sim-connection-path active-route" d="M 400 100 L 130 100" />
-              <path id="pathCtoA" class="sim-connection-path active-route" d="M 660 100 L 130 100" />
-              <path id="pathLeaderToServer" class="sim-connection-path leader-route" d="M 130 140 L 400 230" />
+              <path id="pathBtoA" class="connection-line active-sync" d="M 400 100 L 130 100" />
+              <path id="pathCtoA" class="connection-line active-sync" d="M 660 100 L 130 100" />
+              <path id="pathLeaderToServer" class="connection-line leader-link" d="M 130 140 L 400 230" />
               
               <!-- Alternative Routes (Initially hidden/inactive) -->
-              <path id="pathCtoB" class="sim-connection-path" d="M 660 100 L 400 100" />
-              <path id="pathFollowerToServer" class="sim-connection-path" d="M 400 140 L 400 230" />
+              <path id="pathCtoB" class="connection-line" d="M 660 100 L 400 100" />
+              <path id="pathFollowerToServer" class="connection-line" d="M 400 140 L 400 230" />
               
               <!-- Glowing message pulses -->
-              <circle id="pulse1" class="sim-pulse" cx="0" cy="0" r="0" />
-              <circle id="pulse2" class="sim-pulse" cx="0" cy="0" r="0" />
+              <circle id="pulse1" class="glow-pulse" cx="0" cy="0" r="0" />
+              <circle id="pulse2" class="glow-pulse" cx="0" cy="0" r="0" />
             </svg>
 
             <!-- Realtime Server Node -->
-            <div class="sim-server connected-server" id="serverNode">
-              <div class="sim-server-icon">🖥️</div>
-              <div class="sim-server-name">Realtime Server</div>
-              <div class="sim-server-status" id="serverStatus">1 active socket</div>
+            <div class="server-node active" id="serverNode">
+              <div class="server-icon">🖥️</div>
+              <div class="server-title">Realtime Server</div>
+              <div class="server-meta" id="serverStatus">1 active socket</div>
             </div>
           </div>
 
           <!-- Console logging output -->
           <div class="sim-console" id="simConsole">
-            <div class="sim-console-line"><span class="sim-console-time">[21:44:00]</span> Initialized coordination manager namespace: my_app</div>
-            <div class="sim-console-line"><span class="sim-console-time">[21:44:01]</span> Tab A elected as LEADER (oldest tab)</div>
-            <div class="sim-console-line"><span class="sim-console-time">[21:44:01]</span> Tab A opened WebSocket connection to wss://api.example.com/events</div>
+            <div class="console-line"><span class="console-timestamp">[21:44:00]</span> Initialized coordination manager namespace: my_app</div>
+            <div class="console-line"><span class="console-timestamp">[21:44:01]</span> Tab A elected as LEADER (oldest tab)</div>
+            <div class="console-line"><span class="console-timestamp">[21:44:01]</span> Tab A opened WebSocket connection to wss://api.example.com/events</div>
           </div>
         </div>
       </section>
@@ -149,7 +163,14 @@
       <section id="installation">
         <h2>Installation</h2>
         <p>Install the core package along with any required transport implementations:</p>
-        <pre><button class="copy-btn">Copy</button><code># Install Core
+        
+        <div class="code-window">
+          <div class="code-header">
+            <span style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono)">Terminal</span>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code># Install Core Manager
 pnpm add @connexis/core
 
 # Install Transports
@@ -157,6 +178,8 @@ pnpm add @connexis/transport-websocket @connexis/transport-sse @connexis/transpo
 
 # Install React Bindings (optional)
 pnpm add @connexis/react</code></pre>
+          </div>
+        </div>
       </section>
 
       <section id="transports">
@@ -165,34 +188,66 @@ pnpm add @connexis/react</code></pre>
 
         <h3>1. WebSocket Transport</h3>
         <p>Bi-directional, low-latency, full-duplex communication:</p>
-        <pre><button class="copy-btn">Copy</button><code>import { createRealtimeClient } from '@connexis/core';
+        
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">websocket-setup.ts</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">import { createRealtimeClient } from '@connexis/core';
 import { WebSocketTransport } from '@connexis/transport-websocket';
 
 const client = createRealtimeClient({
   transport: new WebSocketTransport('wss://api.example.com/events'),
   connectionPolicy: 'isolated'
 });</code></pre>
+          </div>
+        </div>
 
         <h3>2. Server-Sent Events (SSE)</h3>
         <p>Unidirectional HTTP-based event stream from server to client, with an optional POST fallback configuration for publishing:</p>
-        <pre><button class="copy-btn">Copy</button><code>import { SSETransport } from '@connexis/transport-sse';
+        
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">sse-setup.ts</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">import { SSETransport } from '@connexis/transport-sse';
 
 const client = createRealtimeClient({
   transport: new SSETransport('https://api.example.com/stream', {
     publishUrl: 'https://api.example.com/publish' // fallback POST url for publish calls
   })
 });</code></pre>
+          </div>
+        </div>
 
         <h3>3. HTTP Polling</h3>
         <p>Standard interval-driven polling fallback for legacy environments:</p>
-        <pre><button class="copy-btn">Copy</button><code>import { PollingTransport } from '@connexis/transport-polling';
+        
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">polling-setup.ts</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">import { PollingTransport } from '@connexis/transport-polling';
 
 const client = createRealtimeClient({
   transport: new PollingTransport('https://api.example.com/poll', {
     pollInterval: 5000 // poll every 5 seconds
   })
 });</code></pre>
-
+          </div>
+        </div>
       </section>
 
       <section id="authentication">
@@ -205,13 +260,24 @@ const client = createRealtimeClient({
         <p>
           Instead of passing a static string, you can provide an asynchronous callback function that returns a <code>Promise&lt;string&gt;</code>. The client will invoke this callback before every connection or reconnection attempt. This is extremely useful for automatically renewing expired JSON Web Tokens (JWT) or retrieving fresh credentials from an auth provider.
         </p>
-        <pre><button class="copy-btn">Copy</button><code>const transport = new WebSocketTransport('wss://api.example.com/events', {
+        
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">auth-rotation.ts</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">const transport = new WebSocketTransport('wss://api.example.com/events', {
   // Evaluated dynamically on initial connect and every retry
   authToken: async () => {
     const token = await fetchFreshJWT();
     return token;
   }
 });</code></pre>
+          </div>
+        </div>
 
         <h3>2. Connection Stabilization Protection</h3>
         <p>
@@ -220,7 +286,16 @@ const client = createRealtimeClient({
         <p>
           To prevent the client from spamming the server in an infinite reconnect loop, configure the <code>stableThreshold</code> option inside <code>reconnectOptions</code>. A connection must remain open for this threshold duration (in milliseconds) before the retry attempt counter is reset to <code>0</code>.
         </p>
-        <pre><button class="copy-btn">Copy</button><code>const client = createRealtimeClient({
+        
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">stabilization.ts</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">const client = createRealtimeClient({
   transport,
   reconnectOptions: {
     maxAttempts: 5,        // Stop retrying after 5 attempts
@@ -228,24 +303,26 @@ const client = createRealtimeClient({
     stableThreshold: 5000  // Connection must stay alive for 5s to be stable
   }
 });</code></pre>
+          </div>
+        </div>
       </section>
 
       <section id="policies">
         <h2>Connection Policies</h2>
         <p>Control socket reuse and resource consumption across tabs using policy options:</p>
         
-        <div class="callout">
-          <div class="callout-title">Isolated Mode</div>
+        <div class="doc-callout">
+          <div class="doc-callout-title">Isolated Mode</div>
           <p>Every client instance owns its own transport. Perfect for admin dashboards, query panels, or debug consoles where distinct data streams are required.</p>
         </div>
 
-        <div class="callout" style="border-left-color: var(--accent-cyan);">
-          <div class="callout-title">Shared Mode</div>
+        <div class="doc-callout" style="border-left-color: var(--accent-cyan);">
+          <div class="doc-callout-title">Shared Mode</div>
           <p>Only one socket connection exists browser-wide. All tabs share this connection, delegating subscriptions to the single leader tab.</p>
         </div>
 
-        <div class="callout" style="border-left-color: var(--accent-purple);">
-          <div class="callout-title">Hybrid Mode</div>
+        <div class="doc-callout" style="border-left-color: var(--accent-purple);">
+          <div class="doc-callout-title">Hybrid Mode</div>
           <p>Deduplicates identical subscriptions (same topic and filter) onto a shared connection. Unique filters automatically spawn dedicated connections to preserve server bandwidth.</p>
         </div>
 
@@ -253,7 +330,16 @@ const client = createRealtimeClient({
         <p>
           You can provide a custom key selector function. This function receives the <code>Subscription</code> request object and returns a connection key string. All subscriptions resolving to the same key will share the same physical transport connection.
         </p>
-        <pre><button class="copy-btn">Copy</button><code>const client = createRealtimeClient({
+        
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">custom-policy.ts</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">const client = createRealtimeClient({
   transport: new WebSocketTransport('wss://api.example.com/events'),
   connectionPolicy: (sub) => {
     // Separate connections by user tier (passed in metadata)
@@ -263,6 +349,8 @@ const client = createRealtimeClient({
     return 'default-shared-conn';
   }
 });</code></pre>
+          </div>
+        </div>
       </section>
 
       <section id="coordination">
@@ -270,13 +358,24 @@ const client = createRealtimeClient({
         <p>
           Passing a <code>Coordinator</code> instance to the client activates the synchronization layer. It attempts to load a dynamic <code>SharedWorker</code> first. If not supported (e.g. mobile Safari), it gracefully falls back to <code>BroadcastChannel</code>.
         </p>
-        <pre><button class="copy-btn">Copy</button><code>import { Coordinator } from '@connexis/coordinator';
+        
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">coordination.ts</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">import { Coordinator } from '@connexis/coordinator';
 
 const client = createRealtimeClient({
   transport: new WebSocketTransport('wss://api.example.com/events'),
   connectionPolicy: 'shared',
   coordinator: new Coordinator('my_app_namespace')
 });</code></pre>
+          </div>
+        </div>
 
         <h3>Automatic Failover</h3>
         <p>
@@ -289,7 +388,16 @@ const client = createRealtimeClient({
         <p>
           Apply async, Koa-style middlewares to intercept, inspect, modify, or reject inbound and outbound payloads:
         </p>
-        <pre><button class="copy-btn">Copy</button><code>client.use(async (context, next) => {
+        
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">middleware.ts</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">client.use(async (context, next) => {
   // Inbound or Outbound directions
   if (context.direction === 'outbound' && context.topic === 'orders') {
     context.payload.timestamp = Date.now(); // modify payload
@@ -302,6 +410,8 @@ const client = createRealtimeClient({
   
   await next(); // yield to next middleware in chain
 });</code></pre>
+          </div>
+        </div>
       </section>
 
       <section id="react">
@@ -309,7 +419,15 @@ const client = createRealtimeClient({
         <p>Use the <code>@connexis/react</code> package to easily bind states to components with automatic subscription setup and teardown:</p>
 
         <h3>Provider Setup</h3>
-        <pre><button class="copy-btn">Copy</button><code>import React from 'react';
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">Provider.tsx</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code>import React from 'react';
 import { RealtimeProvider } from '@connexis/react';
 import { client } from './client';
 
@@ -320,6 +438,8 @@ function App() {
     &lt;/RealtimeProvider&gt;
   );
 }</code></pre>
+          </div>
+        </div>
 
         <h3>Hooks Usage</h3>
         <p>
@@ -332,7 +452,15 @@ function App() {
           <li><strong><code>usePublish()</code></strong>: Returns a callback function to easily publish payloads.</li>
         </ul>
 
-        <pre><button class="copy-btn">Copy</button><code>import { useConnection, useSubscription, usePublish } from '@connexis/react';
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">Dashboard.tsx</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code>import { useConnection, useSubscription, usePublish } from '@connexis/react';
 
 function Dashboard() {
   const { state, metrics } = useConnection();
@@ -354,6 +482,8 @@ function Dashboard() {
     &lt;/div&gt;
   );
 }</code></pre>
+          </div>
+        </div>
       </section>
 
       <!-- React App Demo Section -->
@@ -363,7 +493,15 @@ function Dashboard() {
           Here is a complete, production-grade example of a React application built using <code>@connexis/react</code>. It showcases real-time Kanban column task movement synchronized automatically across multiple browser tabs using a shared connection.
         </p>
 
-        <pre><button class="copy-btn">Copy</button><code>import React, { useState } from 'react';
+        <div class="code-window">
+          <div class="code-header">
+            <div class="code-tabs">
+              <span class="code-tab active">KanbanApp.tsx</span>
+            </div>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code>import React, { useState } from 'react';
 import { RealtimeProvider, useConnection, useSubscription, usePublish } from '@connexis/react';
 import { createRealtimeClient } from '@connexis/core';
 import { WebSocketTransport } from '@connexis/transport-websocket';
@@ -489,13 +627,21 @@ export default function App() {
     &lt;/RealtimeProvider&gt;
   );
 }</code></pre>
+          </div>
+        </div>
       </section>
 
       <section id="api-reference">
         <h2>API Reference</h2>
         
         <h3>1. <code>RealtimeClient</code> Interface</h3>
-        <pre><code class="lang-typescript">class RealtimeClient&lt;TEvents = any&gt; extends EventEmitter {
+        <div class="code-window">
+          <div class="code-header">
+            <span style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono)">client-interface.d.ts</span>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">class RealtimeClient&lt;TEvents = any&gt; extends EventEmitter {
   constructor(config: RealtimeClientConfig);
 
   /** Registers Koa-style middleware */
@@ -517,11 +663,19 @@ export default function App() {
   /** Completely destroys the client and terminates all connections */
   destroy(): Promise&lt;void&gt;;
 }</code></pre>
+          </div>
+        </div>
 
         <h3>2. Configuration Types</h3>
         
         <h4><code>RealtimeClientConfig</code></h4>
-        <pre><code class="lang-typescript">interface RealtimeClientConfig {
+        <div class="code-window">
+          <div class="code-header">
+            <span style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono)">config.ts</span>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">interface RealtimeClientConfig {
   transport: Transport;
   connectionPolicy?: ConnectionPolicy; // 'shared' | 'isolated' | 'hybrid' | ((sub: Subscription) => string)
   reconnectOptions?: ReconnectOptions;
@@ -529,27 +683,51 @@ export default function App() {
   coordinator?: ICoordinator;
   debug?: boolean;
 }</code></pre>
+          </div>
+        </div>
 
         <h4><code>ReconnectOptions</code></h4>
-        <pre><code class="lang-typescript">interface ReconnectOptions {
+        <div class="code-window">
+          <div class="code-header">
+            <span style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono)">reconnect-options.ts</span>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">interface ReconnectOptions {
   maxAttempts?: number;           // Defaults to Infinity
   delay?: number | ((attempt: number) => number); // exponential or fixed delay
   timeout?: number;               // connection handshake timeout in ms
   stableThreshold?: number;       // stability window in ms. Defaults to 5000ms
 }</code></pre>
+          </div>
+        </div>
 
         <h4><code>HeartbeatOptions</code></h4>
-        <pre><code class="lang-typescript">interface HeartbeatOptions {
+        <div class="code-window">
+          <div class="code-header">
+            <span style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono)">heartbeat-options.ts</span>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">interface HeartbeatOptions {
   enabled?: boolean;              // Defaults to true
   interval?: number;              // ping frequency in ms. Defaults to 30000ms
   timeout?: number;               // pong timeout in ms. Defaults to 10000ms
   message?: any;                  // custom heartbeat message payload
 }</code></pre>
+          </div>
+        </div>
 
         <h4><code>Metrics</code></h4>
-        <pre><code class="lang-typescript">interface Metrics {
+        <div class="code-window">
+          <div class="code-header">
+            <span style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono)">metrics.ts</span>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">interface Metrics {
   reconnectCount: number;         // accumulated reconnect attempts
-  latency: number;                // average round-trip-time (ping-pong RTT) in ms
+  scaleLatency: number;           // average round-trip-time (ping-pong RTT) in ms
   uptime: number;                 // current connection uptime in ms
   transportType: string;          // 'websocket' | 'sse' | 'polling'
   connectionCount: number;        // number of active physical connections
@@ -560,6 +738,8 @@ export default function App() {
     outbound: number;             // outgoing messages per second
   };
 }</code></pre>
+          </div>
+        </div>
 
         <h3>3. Event Subscriptions</h3>
         <p>The client inherits from an <code>EventEmitter</code> and fires the following events:</p>
@@ -567,13 +747,22 @@ export default function App() {
           <li><code>'stateChange'</code>: Emitted when the aggregated connection state updates. Payload: <code>{ state: ConnectionState }</code>.</li>
           <li><code>'metricsChange'</code>: Emitted periodically when connection stats are recalculated. Payload: <code>Metrics</code>.</li>
         </ul>
-        <pre><code class="lang-typescript">client.on('stateChange', ({ state }) => {
+        
+        <div class="code-window">
+          <div class="code-header">
+            <span style="color:var(--text-muted); font-size:0.8rem; font-family:var(--font-mono)">events-hook.ts</span>
+            <button class="code-copy-btn">Copy</button>
+          </div>
+          <div class="code-window-body">
+            <pre><code class="lang-typescript">client.on('stateChange', ({ state }) => {
   console.log(`Connection state is now: ${state}`);
 });
 
 client.on('metricsChange', (metrics) => {
   console.log(`Latency ping-pong: ${metrics.latency} ms`);
 });</code></pre>
+          </div>
+        </div>
       </section>
 
       <section id="benchmarks">
@@ -581,27 +770,27 @@ client.on('metricsChange', (metrics) => {
         <p>
           <code>@connexis</code> is engineered for high-frequency message streams. Standard performance metrics captured on local environments include:
         </p>
-        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0; text-align: left;">
+        <table>
           <thead>
-            <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-primary);">
-              <th style="padding: 0.75rem;">Operation</th>
-              <th style="padding: 0.75rem;">Count</th>
-              <th style="padding: 0.75rem;">Duration</th>
-              <th style="padding: 0.75rem;">Throughput (ops/sec)</th>
+            <tr>
+              <th>Operation</th>
+              <th>Count</th>
+              <th>Duration</th>
+              <th>Throughput (ops/sec)</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
-              <td style="padding: 0.75rem; font-family: var(--font-mono);">Subscribe + Unsubscribe</td>
-              <td style="padding: 0.75rem;">10,000</td>
-              <td style="padding: 0.75rem;">1.24 s</td>
-              <td style="padding: 0.75rem; color: var(--accent-cyan); font-weight: 600;">16,098</td>
+            <tr>
+              <td style="font-family: var(--font-mono); color: var(--accent-cyan)">Subscribe + Unsubscribe</td>
+              <td>10,000</td>
+              <td>1.24 s</td>
+              <td style="color: var(--accent-emerald); font-weight: 600;">16,098</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
-              <td style="padding: 0.75rem; font-family: var(--font-mono);">Publish Message</td>
-              <td style="padding: 0.75rem;">50,000</td>
-              <td style="padding: 0.75rem;">0.13 s</td>
-              <td style="padding: 0.75rem; color: var(--accent-cyan); font-weight: 600;">374,174</td>
+            <tr>
+              <td style="font-family: var(--font-mono); color: var(--accent-cyan)">Publish Message</td>
+              <td>50,000</td>
+              <td>0.13 s</td>
+              <td style="color: var(--accent-emerald); font-weight: 600;">374,174</td>
             </tr>
           </tbody>
         </table>
@@ -611,9 +800,10 @@ client.on('metricsChange', (metrics) => {
 
   <script>
     // Copy to clipboard logic
-    document.querySelectorAll('.copy-btn').forEach(btn => {
+    document.querySelectorAll('.code-copy-btn, .copy-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const code = btn.nextElementSibling.innerText;
+        const pre = btn.closest('.code-window')?.querySelector('pre') || btn.nextElementSibling;
+        const code = pre.innerText;
         navigator.clipboard.writeText(code).then(() => {
           const original = btn.innerText;
           btn.innerText = 'Copied!';
@@ -633,7 +823,7 @@ client.on('metricsChange', (metrics) => {
 
     // Simple search filter
     const searchBox = document.getElementById('searchBox');
-    const links = document.querySelectorAll('.nav-links a');
+    const links = document.querySelectorAll('.nav-menu a');
     searchBox.addEventListener('input', () => {
       const query = searchBox.value.toLowerCase();
       links.forEach(link => {
@@ -699,14 +889,13 @@ client.on('metricsChange', (metrics) => {
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
       const line = document.createElement('div');
-      line.className = 'sim-console-line';
-      line.innerHTML = `<span class="sim-console-time">[${timeStr}]</span> ${msg}`;
+      line.className = 'console-line';
+      line.innerHTML = `<span class="console-timestamp">[${timeStr}]</span> ${msg}`;
       consoleBox.appendChild(line);
       consoleBox.scrollTop = consoleBox.scrollHeight;
     }
     
     function animatePulse(startPath, endPath, callback) {
-      // Small simulated pulse animation on SVG paths
       let progress = 0;
       const len = startPath.getTotalLength();
       
@@ -750,9 +939,8 @@ client.on('metricsChange', (metrics) => {
       isLeaderAlive = false;
       
       // Update UI for Tab A
-      tabA.classList.remove('active-leader');
-      tabA.classList.add('closed-tab');
-      tabABadge.className = 'sim-badge offline';
+      tabA.className = 'tab-node tab-dead';
+      tabABadge.className = 'node-badge dead';
       tabABadge.innerText = 'offline';
       tabAState.innerText = 'closed';
       
@@ -761,15 +949,14 @@ client.on('metricsChange', (metrics) => {
       logToSimConsole('Starting leader election (Tab B age: 5s, Tab C age: 1s)');
       
       // Path updates
-      pathLeaderToServer.classList.remove('leader-route');
-      pathBtoA.classList.remove('active-route');
-      pathCtoA.classList.remove('active-route');
+      pathLeaderToServer.className = 'connection-line';
+      pathBtoA.className = 'connection-line';
+      pathCtoA.className = 'connection-line';
       
       setTimeout(() => {
         // Tab B wins election
-        tabB.classList.remove('active-follower');
-        tabB.classList.add('active-leader');
-        tabBBadge.className = 'sim-badge leader';
+        tabB.className = 'tab-node leader-active';
+        tabBBadge.className = 'node-badge leader';
         tabBBadge.innerText = 'Leader';
         tabBState.innerText = 'connected';
         
@@ -778,8 +965,8 @@ client.on('metricsChange', (metrics) => {
         tabCState.innerText = 'shared (B)';
         
         // Connect paths
-        pathFollowerToServer.classList.add('leader-route');
-        pathCtoB.classList.add('active-route');
+        pathFollowerToServer.className = 'connection-line leader-link';
+        pathCtoB.className = 'connection-line active-sync';
         
         serverStatus.innerText = '1 active socket';
         
@@ -807,29 +994,29 @@ client.on('metricsChange', (metrics) => {
       isLeaderAlive = true;
       
       // Restores Tab A
-      tabA.className = 'sim-tab-card active-leader';
-      tabABadge.className = 'sim-badge leader';
+      tabA.className = 'tab-node leader-active';
+      tabABadge.className = 'node-badge leader';
       tabABadge.innerText = 'Leader';
       tabAState.innerText = 'connected';
       
       // Restores Tab B
-      tabB.className = 'sim-tab-card active-follower';
-      tabBBadge.className = 'sim-badge follower';
+      tabB.className = 'tab-node follower-active';
+      tabBBadge.className = 'node-badge follower';
       tabBBadge.innerText = 'Follower';
       tabBState.innerText = 'shared (A)';
       
       // Restores Tab C
-      tabC.className = 'sim-tab-card active-follower';
-      tabCBadge.className = 'sim-badge follower';
+      tabC.className = 'tab-node follower-active';
+      tabCBadge.className = 'node-badge follower';
       tabCBadge.innerText = 'Follower';
       tabCState.innerText = 'shared (A)';
       
       // Reset routes
-      pathBtoA.className = 'sim-connection-path active-route';
-      pathCtoA.className = 'sim-connection-path active-route';
-      pathLeaderToServer.className = 'sim-connection-path leader-route';
-      pathCtoB.className = 'sim-connection-path';
-      pathFollowerToServer.className = 'sim-connection-path';
+      pathBtoA.className = 'connection-line active-sync';
+      pathCtoA.className = 'connection-line active-sync';
+      pathLeaderToServer.className = 'connection-line leader-link';
+      pathCtoB.className = 'connection-line';
+      pathFollowerToServer.className = 'connection-line';
       
       serverStatus.innerText = '1 active socket';
       
