@@ -147,6 +147,13 @@ test.describe('Connexis Comprehensive & Resiliency E2E Suite', () => {
         const pageA = await context.newPage();
         await pageA.goto('/');
 
+        // Wait for the app and coordinator to fully initialise before interacting.
+        // The badge appears after coordinator leader-election (~100 ms), which means
+        // React has mounted, all effects have run, and the Overview view (containing
+        // select.form-select) is definitely in the DOM.
+        const badgeA = pageA.locator('.role-dot-badge');
+        await expect(badgeA).toBeVisible({ timeout: 10000 });
+
         // Set transport protocol
         const selectA = pageA.locator('select.form-select');
         await selectA.selectOption(transport);
@@ -155,12 +162,16 @@ test.describe('Connexis Comprehensive & Resiliency E2E Suite', () => {
         const pageB = await context.newPage();
         await pageB.goto('/');
 
+        // Wait for Tab B to be ready too
+        const badgeB = pageB.locator('.role-dot-badge');
+        await expect(badgeB).toBeVisible({ timeout: 10000 });
+
         // Set transport protocol on B
         const selectB = pageB.locator('select.form-select');
         await selectB.selectOption(transport);
 
-        await expect(pageA.locator('.role-dot-badge')).toHaveText('LEADER', { timeout: 8000 });
-        await expect(pageB.locator('.role-dot-badge')).toHaveText('FOLLOWER', { timeout: 8000 });
+        await expect(badgeA).toHaveText('LEADER', { timeout: 8000 });
+        await expect(badgeB).toHaveText('FOLLOWER', { timeout: 8000 });
 
         // Navigate both tabs to Kanban
         await pageA.click('li.nav-item:has-text("Kanban")');
@@ -187,6 +198,7 @@ test.describe('Connexis Comprehensive & Resiliency E2E Suite', () => {
         await pageA.close();
         await pageB.close();
       });
+
       
     });
   }

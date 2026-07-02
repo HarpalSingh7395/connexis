@@ -91,6 +91,9 @@ export const useSubscription = <T = any>(
       }
     });
 
+    // When the Promise resolves: if we are still active, store the unsubscribe
+    // handle; otherwise call it immediately (covers the case where cleanup ran
+    // before the Promise resolved, e.g. React Strict Mode double-invocation).
     unsubPromise.then((unsub) => {
       if (!active) {
         unsub();
@@ -102,10 +105,21 @@ export const useSubscription = <T = any>(
     return () => {
       active = false;
       if (unsubscribe) {
-        unsubscribe();
-      } else if (unsubPromise) {
-        unsubPromise.then((unsub) => unsub());
+        // Promise already resolved — call the stored handle directly and clear
+        // the ref so any subsequent accidental call is a no-op.
+        const fn = unsubscribe;
+        unsubscribe = null;
+        fn();
       }
+      // If the Promise has NOT resolved yet (unsubscribe is null), the .then()
+      // handler above will fire with active === false and call unsub() exactly
+      // once.  We must NOT schedule a second .then() here, because that would
+      // result in unsub() being invoked twice:
+      //   1. from the original .then() above  (active === false → unsub())
+      //   2. from the extra .then() below     (always → unsub())
+      // Double-calling unsubDirect decrements the connection ref-count twice
+      // per subscription (22 extra decrements for 11 hooks in Strict Mode),
+      // driving it to 0 and silently destroying the live connection.
     };
   }, [client, topic, filterString]);
 };

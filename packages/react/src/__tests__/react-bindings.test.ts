@@ -149,4 +149,46 @@ describe('@connexis/react Hooks', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(mockUnsub).toHaveBeenCalled();
   });
+
+  it('should call unsub EXACTLY ONCE when cleanup runs before Promise resolves (React Strict Mode)', async () => {
+    // In React Strict Mode, effects are invoked twice: mount → cleanup → remount.
+    // The cleanup fires before the subscribe Promise has resolved, so `unsubscribe`
+    // is still null when cleanup runs.  The previous (buggy) implementation
+    // scheduled an extra `.then(unsub => unsub())` in the cleanup path, which —
+    // combined with the already-scheduled `.then(unsub => { if (!active) unsub() })`
+    // in the mount path — caused `unsub` to be called TWICE, double-decrementing
+    // the connection ref-count and silently destroying live connections.
+    const client = new MockClient();
+    vi.mocked(useContext).mockReturnValue(client);
+
+    // Keep the Promise pending until we manually resolve it
+    let resolveUnsub!: (fn: () => Promise<void>) => void;
+    const pendingPromise = new Promise<() => Promise<void>>((res) => {
+      resolveUnsub = res;
+    });
+    client.subscribe.mockReturnValue(pendingPromise);
+
+    const mockUnsub = vi.fn().mockResolvedValue(undefined);
+    let effectCleanup: (() => void) | undefined;
+
+    vi.mocked(useEffect).mockImplementationOnce((effect) => {
+      effectCleanup = effect() as any;
+      return undefined;
+    });
+
+    const refObject = { current: null };
+    vi.mocked(useRef).mockReturnValue(refObject);
+
+    useSubscription('ticks', vi.fn());
+
+    // Simulate Strict Mode: cleanup runs BEFORE the Promise resolves
+    if (effectCleanup) effectCleanup();
+
+    // Now resolve the subscribe Promise
+    resolveUnsub(mockUnsub);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    // unsub must be called exactly once — not twice
+    expect(mockUnsub).toHaveBeenCalledTimes(1);
+  });
 });

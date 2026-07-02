@@ -63,4 +63,30 @@ test.describe('Connexis Multi-Tab E2E Tests', () => {
     await expect(stateVal).toHaveText('CONNECTED', { timeout: 8000 });
     await expect(connCount).toHaveText('1');
   });
+
+  test('should support isolated connection policy', async ({ context }) => {
+    // 1. Open Tab A with ?policy=isolated
+    const pageA = await context.newPage();
+    await pageA.goto('/?policy=isolated');
+
+    const stateValA = pageA.locator('.status-row:has-text("Client Lifecycle State") .status-value');
+    await expect(stateValA).toHaveText('CONNECTED', { timeout: 8000 });
+
+    const connCountA = pageA.locator('.status-row:has-text("Active Connection Count") .status-value');
+    await expect(connCountA).toHaveText('1');
+
+    // 2. Open Tab B with ?policy=isolated
+    const pageB = await context.newPage();
+    await pageB.goto('/?policy=isolated');
+
+    const stateValB = pageB.locator('.status-row:has-text("Client Lifecycle State") .status-value');
+    await expect(stateValB).toHaveText('CONNECTED', { timeout: 8000 });
+
+    const connCountB = pageB.locator('.status-row:has-text("Active Connection Count") .status-value');
+    // In isolated mode, Tab B should connect directly and also have 1 active connection!
+    await expect(connCountB).toHaveText('1', { timeout: 8000 });
+
+    await pageA.close();
+    await pageB.close();
+  });
 });

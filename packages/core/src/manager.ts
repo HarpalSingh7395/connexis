@@ -96,8 +96,8 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
     subscription: Subscription,
     handler: (data: any) => void
   ): Promise<() => Promise<void>> {
-    // If coordinator is active and we are follower, delegate
-    if (this.coordinator && !this.coordinator.isLeader) {
+    // If coordinator is active, we are follower, and policy is not isolated, delegate
+    if (this.policy !== 'isolated' && this.coordinator && !this.coordinator.isLeader) {
       this.logger.info('Manager', `Delegating subscription ${subscription.id} to leader`);
 
       this.subscriptions.set(subscription.id, {
@@ -255,7 +255,7 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
   }
 
   async publish(topic: string, data: any): Promise<void> {
-    if (this.coordinator && !this.coordinator.isLeader) {
+    if (this.policy !== 'isolated' && this.coordinator && !this.coordinator.isLeader) {
       this.logger.info('Manager', `Delegating publish to leader`);
       this.coordinator.sendToLeader({
         action: 'publish',
@@ -301,6 +301,7 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
     // Listen to leader changes
     const unsubLeader = this.coordinator.on('leaderChange', async ({ isLeader }) => {
       this.logger.info('Manager', `Coordinator leaderChange. isLeader=${isLeader}`);
+      if (this.policy === 'isolated') return;
       if (isLeader) {
         // Demoted to leader: transition all local subscriptions to direct connections
         const subsToRecreate = Array.from(this.subscriptions.values());
@@ -328,6 +329,7 @@ export class ConnectionManager extends EventEmitter<ManagerEvents> {
 
     // Listen to coordinator communication
     const unsubMessage = this.coordinator.on('message', async ({ senderId, payload }) => {
+      if (this.policy === 'isolated') return;
       if (!payload || typeof payload !== 'object') return;
 
       if (this.coordinator?.isLeader) {
