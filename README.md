@@ -118,34 +118,106 @@ console.log('Average Latency:', typedClient.metrics.latency, 'ms');
 
 ---
 
-## Reconnection, Stability, and Token Rotation
+## Developer Guide & API Reference
 
-To ensure eventual consistency and stability under network volatility, `@connexis` implements advanced reconnection configurations:
+### 1. Client Configuration Options
 
-* 🔄 **Exponential Reconnection Backoff**: Fully customizable retry intervals with standard exponential backoff defaults.
-* 🛡️ **Stability Threshold Protection**: Prevents infinite reconnect loops on application-level authentication failures (e.g., invalid/expired tokens). A connection must remain active for a `stableThreshold` window before its retry counter resets to `0`. If a server rejects authentication post-handshake, the retry count is preserved, eventually exhausting `maxAttempts` and transitioning the client to `'error'` state.
-* 🔑 **Dynamic Token Rotation**: The `authToken` configuration parameter accepts an asynchronous callback function (returning a `Promise<string>`). When a connection attempt is initiated or retried, this callback is re-evaluated to dynamically fetch fresh credentials.
-
-### Configuration Options (`ReconnectOptions`)
+Initialize the `RealtimeClient` using the config options:
 
 ```typescript
+interface RealtimeClientConfig {
+  transport: Transport;               // Transport instance (WebSocket, SSE, Polling)
+  connectionPolicy?: ConnectionPolicy; // 'shared' | 'isolated' | 'hybrid' | ((sub: Subscription) => string)
+  reconnectOptions?: ReconnectOptions; // Reconnection policy configuration
+  heartbeatOptions?: HeartbeatOptions; // Pin/pong configurations
+  coordinator?: ICoordinator;          // Coordinator instance for multi-tab sync
+  debug?: boolean;                     // Enbles diagnostic logs to console
+}
+```
+
+#### Reconnection Options (`ReconnectOptions`)
+```typescript
 interface ReconnectOptions {
-  /** Maximum reconnection attempts before giving up. Defaults to Infinity */
-  maxAttempts?: number;
-  /** Backoff delay in ms or a custom function resolver */
-  delay?: number | ((attempt: number) => number);
-  /** Timeout in ms for connection handshake attempts */
-  timeout?: number;
-  /** Stabilization window in ms. Counter resets only after this time. Defaults to 5000ms */
-  stableThreshold?: number;
+  maxAttempts?: number;           // Max reconnection attempts (default is Infinity)
+  delay?: number | ((attempt: number) => number); // Fixed or exponential delay function
+  timeout?: number;               // Timeout in ms for connection handshakes
+  stableThreshold?: number;       // Stabilization duration in ms (default is 5000ms)
+}
+```
+
+#### Heartbeat Options (`HeartbeatOptions`)
+```typescript
+interface HeartbeatOptions {
+  enabled?: boolean;              // Enable heartbeat ping/pongs (default is true)
+  interval?: number;              // Heartbeat frequency in ms (default is 30000ms)
+  timeout?: number;               // Heartbeat timeout before assuming dead connection (default is 10000ms)
+  message?: any;                  // Custom ping payload
 }
 ```
 
 ---
 
-## React Hooks Example
+### 2. Authentication & Token Rotation
 
-Wrap your application in `RealtimeProvider` and use the built-in hooks:
+`@connexis` handles authentication dynamically for all transport layers. Instead of providing a static token, supply an async callback function returning a `Promise<string>`. This callback is re-evaluated before every new connection or reconnect retry, preventing handshake failures due to expired credentials.
+
+```typescript
+const transport = new WebSocketTransport('wss://api.example.com/events', {
+  authToken: async () => {
+    const freshToken = await retrieveNewSessionToken();
+    return freshToken;
+  }
+});
+```
+
+---
+
+### 3. Connection Policies
+
+Govern how physical connections are reused and shared across matching subscriptions and multiple browser tabs:
+
+1. **`isolated`**: Every client/subscription spawns its own physical connection.
+2. **`shared`**: Exactly one connection is maintained browser-wide (led by the leader tab). All other tabs delegate subscriptions to the leader.
+3. **`hybrid`**: Deduplicates identical subscriptions (same topic and filter) onto a shared connection. Subscriptions with unique filters automatically trigger new dedicated connections.
+4. **Custom**: Provide a custom resolver function `(subscription: Subscription) => string` to group connections based on subscription properties.
+
+```typescript
+const client = createRealtimeClient({
+  transport: new WebSocketTransport('wss://api.example.com/events'),
+  connectionPolicy: (sub) => {
+    // Group connections by subscription metadata region
+    return `conn_${sub.metadata?.region || 'global'}`;
+  }
+});
+```
+
+---
+
+### 4. Middleware Pipeline
+
+Async, Koa-style middlewares can be registered to intercept, inspect, modify, or drop messages.
+
+```typescript
+client.use(async (context, next) => {
+  console.log(`Direction: ${context.direction}`); // 'inbound' or 'outbound'
+  console.log(`Topic: ${context.topic}`);
+  
+  if (context.direction === 'inbound') {
+    // Reject messages that do not meet criteria
+    if (!context.payload.verified) {
+      throw new Error('Unverified message payload');
+    }
+  }
+
+  await next(); // Hand over control to the next middleware
+});
+```
+
+---
+
+### 5. React Hooks Wrapper
+
+Use `@connexis/react` to cleanly hook connection state and message handling into your components.
 
 ```tsx
 import React from 'react';
@@ -156,7 +228,8 @@ export function Dashboard() {
   const { state, metrics } = useConnection();
   const publish = usePublish();
 
-  // Automatic subscribe on mount, unsubscribe on unmount
+  // Automatically subscribes on mount, unsubscribes on unmount.
+  // Resilient to React Strict Mode double-effect execution.
   useSubscription('orders', { filter: { region: 'US' } }, (order) => {
     console.log('Received order:', order);
   });
@@ -179,30 +252,6 @@ export function App() {
     </RealtimeProvider>
   );
 }
-```
-
----
-
-## Failover Sequence Diagram
-
-When the Leader tab closes, a clean `leader_exit` broadcast is sent, prompting follower tabs to immediately start an election and migrate subscriptions to the new leader:
-
-```mermaid
-sequenceDiagram
-    participant TabA as Leader Tab (Closing)
-    participant TabB as Follower Tab
-    participant Server as Realtime Server
-
-    Note over TabA,Server: Normal operation: Tab B delegates to Tab A
-    TabA->>Server: Real Transport Connection (active)
-    Note over TabA: User closes Tab A / Refreshes
-    TabA->>TabB: BroadcastChannel ('leader_exit')
-    TabA->>Server: Close Socket
-    Note over TabB: Tab B detects leader exit
-    TabB->>TabB: Start Election (Oldest wins)
-    Note over TabB: Tab B is promoted to Leader
-    TabB->>Server: Open Direct Connection
-    TabB->>Server: Re-subscribe active filters
 ```
 
 ---
