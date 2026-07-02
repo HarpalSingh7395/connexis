@@ -29,6 +29,15 @@
         <span class="search-icon">🔍</span>
         <input type="text" class="search-input" id="searchBox" placeholder="Search developer docs...">
       </div>
+
+      <!-- Theme Toggle -->
+      <div class="theme-toggle-container">
+        <span class="theme-label">Theme</span>
+        <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle light/dark theme">
+          <span class="theme-toggle-icon">🌙</span>
+          <span class="theme-toggle-text">Dark Mode</span>
+        </button>
+      </div>
       
       <ul class="nav-menu">
         <li><a href="#intro" class="active">Introduction</a></li>
@@ -87,6 +96,12 @@
         <p>
           See `@connexis` multi-tab leader election and failover sequence in action. Followers dynamically delegate coordination to the elected leader, minimizing socket connections.
         </p>
+
+        <div class="policy-selector" id="policySelector">
+          <button class="policy-btn active" data-policy="shared">Shared Policy</button>
+          <button class="policy-btn" data-policy="isolated">Isolated Policy</button>
+          <button class="policy-btn" data-policy="hybrid">Hybrid Policy</button>
+        </div>
         
         <div class="playground-container">
           <div class="playground-header">
@@ -137,6 +152,7 @@
               <!-- Alternative Routes (Initially hidden/inactive) -->
               <path id="pathCtoB" class="connection-line" d="M 660 100 L 400 100" />
               <path id="pathFollowerToServer" class="connection-line" d="M 400 140 L 400 230" />
+              <path id="pathCtoServer" class="connection-line" d="M 660 140 L 400 230" />
               
               <!-- Glowing message pulses -->
               <circle id="pulse1" class="glow-pulse" cx="0" cy="0" r="0" />
@@ -271,7 +287,7 @@ const client = createRealtimeClient({
           <div class="code-window-body">
             <pre><code class="lang-typescript">const transport = new WebSocketTransport('wss://api.example.com/events', {
   // Evaluated dynamically on initial connect and every retry
-  authToken: async () => {
+  authToken: async () =&gt; {
     const token = await fetchFreshJWT();
     return token;
   }
@@ -341,7 +357,7 @@ const client = createRealtimeClient({
           <div class="code-window-body">
             <pre><code class="lang-typescript">const client = createRealtimeClient({
   transport: new WebSocketTransport('wss://api.example.com/events'),
-  connectionPolicy: (sub) => {
+  connectionPolicy: (sub) =&gt; {
     // Separate connections by user tier (passed in metadata)
     if (sub.metadata?.tier === 'premium') {
       return 'premium-conn';
@@ -397,14 +413,14 @@ const client = createRealtimeClient({
             <button class="code-copy-btn">Copy</button>
           </div>
           <div class="code-window-body">
-            <pre><code class="lang-typescript">client.use(async (context, next) => {
+            <pre><code class="lang-typescript">client.use(async (context, next) =&gt; {
   // Inbound or Outbound directions
-  if (context.direction === 'outbound' && context.topic === 'orders') {
+  if (context.direction === 'outbound' &amp;&amp; context.topic === 'orders') {
     context.payload.timestamp = Date.now(); // modify payload
   }
   
   // Rejecting a message
-  if (context.direction === 'inbound' && context.payload.isSpam) {
+  if (context.direction === 'inbound' &amp;&amp; context.payload.isSpam) {
     throw new Error('Rejected spam message'); // stops pipeline execution
   }
   
@@ -467,7 +483,7 @@ function Dashboard() {
   const publish = usePublish();
 
   // Subscribes on mount, unsubscribes on unmount. Handles filters.
-  useSubscription('orders', { filter: { region: 'US' } }, (order) => {
+  useSubscription('orders', { filter: { region: 'US' } }, (order) =&gt; {
     console.log('New US order:', order);
   });
 
@@ -532,18 +548,18 @@ function KanbanBoard() {
   ]);
 
   // Synchronize board changes from other tabs / server
-  useSubscription('kanban_moves', (payload: { id: string; targetColumn: 'todo' | 'progress' | 'done' }) => {
-    setCards((prevCards) =>
-      prevCards.map((card) =>
+  useSubscription('kanban_moves', (payload: { id: string; targetColumn: 'todo' | 'progress' | 'done' }) =&gt; {
+    setCards((prevCards) =&gt;
+      prevCards.map((card) =&gt;
         card.id === payload.id ? { ...card, column: payload.targetColumn } : card
       )
     );
   });
 
-  const moveCard = async (id: string, targetColumn: 'todo' | 'progress' | 'done') => {
+  const moveCard = async (id: string, targetColumn: 'todo' | 'progress' | 'done') =&gt; {
     // Optimistic update locally
-    setCards((prevCards) =>
-      prevCards.map((card) =>
+    setCards((prevCards) =&gt;
+      prevCards.map((card) =&gt;
         card.id === id ? { ...card, column: targetColumn } : card
       )
     );
@@ -573,7 +589,7 @@ function KanbanBoard() {
       &lt;/div&gt;
 
       &lt;div className="columns" style={{ display: 'flex', gap: '20px' }}&gt;
-        {([&apos;todo&apos;, &apos;progress&apos;, &apos;done&apos;] as const).map((columnName) => (
+        {([&apos;todo&apos;, &apos;progress&apos;, &apos;done&apos;] as const).map((columnName) =&gt; (
           &lt;div key={columnName} style={{
             flex: 1,
             background: '#f3f4f6',
@@ -592,13 +608,13 @@ function KanbanBoard() {
               }}&gt;
                 &lt;div style={{ fontWeight: '500', marginBottom: '8px' }}&gt;{card.title}&lt;/div&gt;
                 &lt;div style={{ display: 'flex', gap: '5px' }}&gt;
-                  {columnName !== 'todo' && (
+                  {columnName !== 'todo' &amp;&amp; (
                     &lt;button onClick={() =&gt; moveCard(card.id, 'todo')} style={btnStyle}&gt;↩ To Do&lt;/button&gt;
                   )}
-                  {columnName !== 'progress' && (
+                  {columnName !== 'progress' &amp;&amp; (
                     &lt;button onClick={() =&gt; moveCard(card.id, 'progress')} style={btnStyle}&gt;➔ Progress&lt;/button&gt;
                   )}
-                  {columnName !== 'done' && (
+                  {columnName !== 'done' &amp;&amp; (
                     &lt;button onClick={() =&gt; moveCard(card.id, 'done')} style={btnStyle}&gt;✓ Done&lt;/button&gt;
                   )}
                 &lt;/div&gt;
@@ -654,8 +670,8 @@ export default function App() {
   readonly metrics: Metrics;
 
   /** Subscribes to a topic (returns unsubscriber callback) */
-  subscribe&lt;K&gt;(topic: K, handler: (data: any) => void): Promise&lt;() => Promise&lt;void&gt;&gt;;
-  subscribe&lt;K&gt;(topic: K, options: SubscribeOptions, handler: (data: any) => void): Promise&lt;() => Promise&lt;void&gt;&gt;;
+  subscribe&lt;K&gt;(topic: K, handler: (data: any) =&gt; void): Promise&lt;() =&gt; Promise&lt;void&gt;&gt;;
+  subscribe&lt;K&gt;(topic: K, options: SubscribeOptions, handler: (data: any) =&gt; void): Promise&lt;() =&gt; Promise&lt;void&gt;&gt;;
 
   /** Publishes data to a topic */
   publish&lt;K&gt;(topic: K, payload: any): Promise&lt;void&gt;;
@@ -677,7 +693,7 @@ export default function App() {
           <div class="code-window-body">
             <pre><code class="lang-typescript">interface RealtimeClientConfig {
   transport: Transport;
-  connectionPolicy?: ConnectionPolicy; // 'shared' | 'isolated' | 'hybrid' | ((sub: Subscription) => string)
+  connectionPolicy?: ConnectionPolicy; // 'shared' | 'isolated' | 'hybrid' | ((sub: Subscription) =&gt; string)
   reconnectOptions?: ReconnectOptions;
   heartbeatOptions?: HeartbeatOptions;
   coordinator?: ICoordinator;
@@ -695,7 +711,7 @@ export default function App() {
           <div class="code-window-body">
             <pre><code class="lang-typescript">interface ReconnectOptions {
   maxAttempts?: number;           // Defaults to Infinity
-  delay?: number | ((attempt: number) => number); // exponential or fixed delay
+  delay?: number | ((attempt: number) =&gt; number); // exponential or fixed delay
   timeout?: number;               // connection handshake timeout in ms
   stableThreshold?: number;       // stability window in ms. Defaults to 5000ms
 }</code></pre>
@@ -754,11 +770,11 @@ export default function App() {
             <button class="code-copy-btn">Copy</button>
           </div>
           <div class="code-window-body">
-            <pre><code class="lang-typescript">client.on('stateChange', ({ state }) => {
+            <pre><code class="lang-typescript">client.on('stateChange', ({ state }) =&gt; {
   console.log(`Connection state is now: ${state}`);
 });
 
-client.on('metricsChange', (metrics) => {
+client.on('metricsChange', (metrics) =&gt; {
   console.log(`Latency ping-pong: ${metrics.latency} ms`);
 });</code></pre>
           </div>
@@ -799,6 +815,32 @@ client.on('metricsChange', (metrics) => {
   </div>
 
   <script>
+    // Theme toggle logic
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = themeToggleBtn.querySelector('.theme-toggle-icon');
+    const themeText = themeToggleBtn.querySelector('.theme-toggle-text');
+    
+    let currentTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    updateThemeUI();
+
+    themeToggleBtn.addEventListener('click', () => {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', currentTheme);
+      localStorage.setItem('theme', currentTheme);
+      updateThemeUI();
+    });
+
+    function updateThemeUI() {
+      if (currentTheme === 'dark') {
+        themeIcon.innerText = '🌙';
+        themeText.innerText = 'Dark Mode';
+      } else {
+        themeIcon.innerText = '☀️';
+        themeText.innerText = 'Light Mode';
+      }
+    }
+
     // Copy to clipboard logic
     document.querySelectorAll('.code-copy-btn, .copy-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -821,6 +863,16 @@ client.on('metricsChange', (metrics) => {
       sidebar.classList.toggle('open');
     });
 
+    // Close sidebar when clicking links on mobile
+    const menuLinks = document.querySelectorAll('.nav-menu a');
+    menuLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('open');
+        }
+      });
+    });
+
     // Simple search filter
     const searchBox = document.getElementById('searchBox');
     const links = document.querySelectorAll('.nav-menu a');
@@ -840,9 +892,10 @@ client.on('metricsChange', (metrics) => {
     const sections = document.querySelectorAll('section');
     window.addEventListener('scroll', () => {
       let current = '';
+      const scrollPos = window.scrollY || window.pageYOffset;
       sections.forEach(section => {
         const sectionTop = section.offsetTop;
-        if (pageYOffset >= sectionTop - 120) {
+        if (scrollPos >= sectionTop - 150) {
           current = section.getAttribute('id');
         }
       });
@@ -871,6 +924,7 @@ client.on('metricsChange', (metrics) => {
     const pathLeaderToServer = document.getElementById('pathLeaderToServer');
     const pathCtoB = document.getElementById('pathCtoB');
     const pathFollowerToServer = document.getElementById('pathFollowerToServer');
+    const pathCtoServer = document.getElementById('pathCtoServer');
     
     const pulse1 = document.getElementById('pulse1');
     const pulse2 = document.getElementById('pulse2');
@@ -883,7 +937,11 @@ client.on('metricsChange', (metrics) => {
     const pubMessageBtn = document.getElementById('pubMessageBtn');
     const resetSimBtn = document.getElementById('resetSimBtn');
     
+    const policySelector = document.getElementById('policySelector');
+    const policyBtns = policySelector.querySelectorAll('.policy-btn');
+    
     let isLeaderAlive = true;
+    let currentPolicy = 'shared'; // 'shared' | 'isolated' | 'hybrid'
     
     function logToSimConsole(msg) {
       const now = new Date();
@@ -934,6 +992,106 @@ client.on('metricsChange', (metrics) => {
       requestAnimationFrame(step);
     }
 
+    // Policy toggle handler
+    policyBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        policyBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPolicy = btn.getAttribute('data-policy');
+        
+        logToSimConsole(`Policy switched to ${currentPolicy.toUpperCase()}`);
+        updatePolicyUI();
+      });
+    });
+
+    function updatePolicyUI() {
+      // Restore initial alive state
+      isLeaderAlive = true;
+      
+      if (currentPolicy === 'shared') {
+        serverStatus.innerText = '1 active socket';
+        
+        tabA.className = 'tab-node leader-active';
+        tabABadge.className = 'node-badge leader';
+        tabABadge.innerText = 'Leader';
+        tabAState.innerText = 'connected';
+        
+        tabB.className = 'tab-node follower-active';
+        tabBBadge.className = 'node-badge follower';
+        tabBBadge.innerText = 'Follower';
+        tabBState.innerText = 'shared (A)';
+        
+        tabC.className = 'tab-node follower-active';
+        tabCBadge.className = 'node-badge follower';
+        tabCBadge.innerText = 'Follower';
+        tabCState.innerText = 'shared (A)';
+        
+        pathBtoA.className = 'connection-line active-sync';
+        pathCtoA.className = 'connection-line active-sync';
+        pathLeaderToServer.className = 'connection-line leader-link';
+        pathCtoB.className = 'connection-line';
+        pathFollowerToServer.className = 'connection-line';
+        pathCtoServer.className = 'connection-line';
+        
+        killLeaderBtn.style.display = 'inline-block';
+        logToSimConsole('Shared policy maps all tabs into a single leader websocket connection');
+      } else if (currentPolicy === 'isolated') {
+        serverStatus.innerText = '3 active sockets';
+        
+        tabA.className = 'tab-node leader-active';
+        tabABadge.className = 'node-badge leader';
+        tabABadge.innerText = 'Isolated';
+        tabAState.innerText = 'connected';
+        
+        tabB.className = 'tab-node leader-active';
+        tabBBadge.className = 'node-badge leader';
+        tabBBadge.innerText = 'Isolated';
+        tabBState.innerText = 'connected';
+        
+        tabC.className = 'tab-node leader-active';
+        tabCBadge.className = 'node-badge leader';
+        tabCBadge.innerText = 'Isolated';
+        tabCState.innerText = 'connected';
+        
+        pathBtoA.className = 'connection-line';
+        pathCtoA.className = 'connection-line';
+        pathLeaderToServer.className = 'connection-line leader-link';
+        pathCtoB.className = 'connection-line';
+        pathFollowerToServer.className = 'connection-line leader-link';
+        pathCtoServer.className = 'connection-line leader-link';
+        
+        killLeaderBtn.style.display = 'none';
+        logToSimConsole('Isolated policy spawns unique connections for every tab instance');
+      } else if (currentPolicy === 'hybrid') {
+        serverStatus.innerText = '2 active sockets';
+        
+        tabA.className = 'tab-node leader-active';
+        tabABadge.className = 'node-badge leader';
+        tabABadge.innerText = 'Leader';
+        tabAState.innerText = 'connected';
+        
+        tabB.className = 'tab-node follower-active';
+        tabBBadge.className = 'node-badge follower';
+        tabBBadge.innerText = 'Follower';
+        tabBState.innerText = 'shared (A)';
+        
+        tabC.className = 'tab-node leader-active';
+        tabCBadge.className = 'node-badge leader';
+        tabCBadge.innerText = 'Isolated (Filtered)';
+        tabCState.innerText = 'connected';
+        
+        pathBtoA.className = 'connection-line active-sync';
+        pathCtoA.className = 'connection-line';
+        pathLeaderToServer.className = 'connection-line leader-link';
+        pathCtoB.className = 'connection-line';
+        pathFollowerToServer.className = 'connection-line';
+        pathCtoServer.className = 'connection-line leader-link';
+        
+        killLeaderBtn.style.display = 'inline-block';
+        logToSimConsole('Hybrid policy shares duplicate topics but establishes dedicated lines for distinct query parameters');
+      }
+    }
+
     killLeaderBtn.addEventListener('click', () => {
       if (!isLeaderAlive) return;
       isLeaderAlive = false;
@@ -954,72 +1112,79 @@ client.on('metricsChange', (metrics) => {
       pathCtoA.className = 'connection-line';
       
       setTimeout(() => {
-        // Tab B wins election
-        tabB.className = 'tab-node leader-active';
-        tabBBadge.className = 'node-badge leader';
-        tabBBadge.innerText = 'Leader';
-        tabBState.innerText = 'connected';
-        
-        // Tab C follows Tab B
-        tabCBadge.innerText = 'Follower';
-        tabCState.innerText = 'shared (B)';
-        
-        // Connect paths
-        pathFollowerToServer.className = 'connection-line leader-link';
-        pathCtoB.className = 'connection-line active-sync';
-        
-        serverStatus.innerText = '1 active socket';
-        
-        logToSimConsole('Tab B promoted to LEADER');
-        logToSimConsole('Tab B opened new socket connection to wss://api.example.com/events');
-        logToSimConsole('Tab C coordinated connection to Tab B');
+        if (currentPolicy === 'shared') {
+          // Tab B wins election
+          tabB.className = 'tab-node leader-active';
+          tabBBadge.className = 'node-badge leader';
+          tabBBadge.innerText = 'Leader';
+          tabBState.innerText = 'connected';
+          
+          // Tab C follows Tab B
+          tabCBadge.innerText = 'Follower';
+          tabCState.innerText = 'shared (B)';
+          
+          // Connect paths
+          pathFollowerToServer.className = 'connection-line leader-link';
+          pathCtoB.className = 'connection-line active-sync';
+          
+          serverStatus.innerText = '1 active socket';
+          logToSimConsole('Tab B promoted to LEADER');
+          logToSimConsole('Tab B opened new socket connection to wss://api.example.com/events');
+          logToSimConsole('Tab C coordinated connection to Tab B');
+        } else if (currentPolicy === 'hybrid') {
+          // Tab B wins election for shared namespace
+          tabB.className = 'tab-node leader-active';
+          tabBBadge.className = 'node-badge leader';
+          tabBBadge.innerText = 'Leader';
+          tabBState.innerText = 'connected';
+          
+          // Tab C remains isolated
+          tabCBadge.innerText = 'Isolated (Filtered)';
+          tabCState.innerText = 'connected';
+          
+          // Connect paths
+          pathFollowerToServer.className = 'connection-line leader-link';
+          pathCtoServer.className = 'connection-line leader-link';
+          
+          serverStatus.innerText = '2 active sockets';
+          logToSimConsole('Tab B promoted to LEADER for shared subscriptions');
+          logToSimConsole('Tab C remains connected on its isolated channel');
+        }
       }, 1000);
     });
     
     pubMessageBtn.addEventListener('click', () => {
-      if (isLeaderAlive) {
-        logToSimConsole('Tab C publishing event "user_click"');
-        animatePulse(pathCtoA, pathLeaderToServer, () => {
-          logToSimConsole('Server processed event "user_click" successfully');
+      logToSimConsole('Tab C publishing event "user_click"');
+      
+      if (currentPolicy === 'shared') {
+        if (isLeaderAlive) {
+          animatePulse(pathCtoA, pathLeaderToServer, () => {
+            logToSimConsole('Server processed event "user_click" successfully via Tab A');
+          });
+        } else {
+          animatePulse(pathCtoB, pathFollowerToServer, () => {
+            logToSimConsole('Server processed event "user_click" successfully via Tab B');
+          });
+        }
+      } else if (currentPolicy === 'isolated') {
+        animatePulse(pathCtoServer, null, () => {
+          logToSimConsole('Server processed event "user_click" successfully via direct Tab C connection');
         });
-      } else {
-        logToSimConsole('Tab C publishing event "user_click"');
-        animatePulse(pathCtoB, pathFollowerToServer, () => {
-          logToSimConsole('Server processed event "user_click" successfully');
+      } else if (currentPolicy === 'hybrid') {
+        // Tab C is isolated
+        animatePulse(pathCtoServer, null, () => {
+          logToSimConsole('Server processed event "user_click" successfully via direct filtered channel');
         });
       }
     });
 
     resetSimBtn.addEventListener('click', () => {
-      isLeaderAlive = true;
-      
-      // Restores Tab A
-      tabA.className = 'tab-node leader-active';
-      tabABadge.className = 'node-badge leader';
-      tabABadge.innerText = 'Leader';
-      tabAState.innerText = 'connected';
-      
-      // Restores Tab B
-      tabB.className = 'tab-node follower-active';
-      tabBBadge.className = 'node-badge follower';
-      tabBBadge.innerText = 'Follower';
-      tabBState.innerText = 'shared (A)';
-      
-      // Restores Tab C
-      tabC.className = 'tab-node follower-active';
-      tabCBadge.className = 'node-badge follower';
-      tabCBadge.innerText = 'Follower';
-      tabCState.innerText = 'shared (A)';
-      
-      // Reset routes
-      pathBtoA.className = 'connection-line active-sync';
-      pathCtoA.className = 'connection-line active-sync';
-      pathLeaderToServer.className = 'connection-line leader-link';
-      pathCtoB.className = 'connection-line';
-      pathFollowerToServer.className = 'connection-line';
-      
-      serverStatus.innerText = '1 active socket';
-      
+      currentPolicy = 'shared';
+      policyBtns.forEach(b => {
+        b.classList.remove('active');
+        if (b.getAttribute('data-policy') === 'shared') b.classList.add('active');
+      });
+      updatePolicyUI();
       logToSimConsole('Demo reset. Tab A re-promoted to Leader.');
     });
   </script>
