@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>@connexis - Universal Realtime Client Docs</title>
+  <title>@connexis - Universal Realtime Client Developer Guide</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -28,6 +28,7 @@
         <li><a href="#coordination">Multi-Tab Coordination</a></li>
         <li><a href="#middlewares">Middlewares</a></li>
         <li><a href="#react">React Wrapper</a></li>
+        <li><a href="#api-reference">API Reference</a></li>
         <li><a href="#benchmarks">Benchmarks & Stress Tests</a></li>
       </ul>
     </aside>
@@ -35,7 +36,7 @@
     <!-- Main Content -->
     <main class="main-content">
       <section id="intro">
-        <span class="badge">v1.0.0</span>
+        <span class="badge">v1.0.4</span>
         <span class="badge purple">MIT License</span>
         <h1>Universal Realtime Connection Manager</h1>
         <p>
@@ -167,10 +168,19 @@ const client = createRealtimeClient({
           <p>Deduplicates identical subscriptions (same topic and filter) onto a shared connection. Unique filters automatically spawn dedicated connections to preserve server bandwidth.</p>
         </div>
 
-        <pre><button class="copy-btn">Copy</button><code>// Hybrid policy config
-const client = createRealtimeClient({
+        <h3>Custom Policy Selector</h3>
+        <p>
+          You can provide a custom key selector function. This function receives the <code>Subscription</code> request object and returns a connection key string. All subscriptions resolving to the same key will share the same physical transport connection.
+        </p>
+        <pre><button class="copy-btn">Copy</button><code>const client = createRealtimeClient({
   transport: new WebSocketTransport('wss://api.example.com/events'),
-  connectionPolicy: 'hybrid'
+  connectionPolicy: (sub) => {
+    // Separate connections by user tier (passed in metadata)
+    if (sub.metadata?.tier === 'premium') {
+      return 'premium-conn';
+    }
+    return 'default-shared-conn';
+  }
 });</code></pre>
       </section>
 
@@ -186,6 +196,11 @@ const client = createRealtimeClient({
   connectionPolicy: 'shared',
   coordinator: new Coordinator('my_app_namespace')
 });</code></pre>
+
+        <h3>Automatic Failover</h3>
+        <p>
+          When the leader tab is closed or refreshed, the coordination layer immediately sends a <code>leader_exit</code> broadcast. The remaining follower tabs instantly trigger a new leader election (determined by tab age). The promoted leader establishes the active socket and re-subscribes all delegated subscriptions seamlessly without message loss.
+        </p>
       </section>
 
       <section id="middlewares">
@@ -199,15 +214,22 @@ const client = createRealtimeClient({
     context.payload.timestamp = Date.now(); // modify payload
   }
   
+  // Rejecting a message
+  if (context.direction === 'inbound' && context.payload.isSpam) {
+    throw new Error('Rejected spam message'); // stops pipeline execution
+  }
+  
   await next(); // yield to next middleware in chain
 });</code></pre>
       </section>
 
       <section id="react">
         <h2>React Hooks Wrapper</h2>
-        <p>Use the `@connexis/react` package to easily bind states to components with automatic subscription setup and teardown:</p>
+        <p>Use the <code>@connexis/react</code> package to easily bind states to components with automatic subscription setup and teardown:</p>
+
+        <h3>Provider Setup</h3>
         <pre><button class="copy-btn">Copy</button><code>import React from 'react';
-import { RealtimeProvider, useConnection, useSubscription } from '@connexis/react';
+import { RealtimeProvider } from '@connexis/react';
 import { client } from './client';
 
 function App() {
@@ -216,28 +238,132 @@ function App() {
       <Dashboard />
     </RealtimeProvider>
   );
-}
+}</code></pre>
+
+        <h3>Hooks Usage</h3>
+        <p>
+          The package exports four primary React hooks:
+        </p>
+        <ul>
+          <li><strong><code>useRealtime()</code></strong>: Returns the active <code>RealtimeClient</code> instance from context.</li>
+          <li><strong><code>useConnection()</code></strong>: Returns the current connection state and aggregated metrics. Updates when they change.</li>
+          <li><strong><code>useSubscription(topic, optionsOrHandler, handlerOrUndefined)</code></strong> (aliased as <strong><code>useChannel</code></strong>): Establishes a subscription with automatic cleanup on component unmount. Avoids double-unsubscribe bugs in React Strict Mode.</li>
+          <li><strong><code>usePublish()</code></strong>: Returns a callback function to easily publish payloads.</li>
+        </ul>
+
+        <pre><button class="copy-btn">Copy</button><code>import { useConnection, useSubscription, usePublish } from '@connexis/react';
 
 function Dashboard() {
   const { state, metrics } = useConnection();
+  const publish = usePublish();
 
+  // Subscribes on mount, unsubscribes on unmount. Handles filters.
   useSubscription('orders', { filter: { region: 'US' } }, (order) => {
-    console.log('New order received:', order);
+    console.log('New US order:', order);
   });
 
   return (
     <div>
       <h3>Status: {state}</h3>
-      <p>Latency: {metrics.latency} ms</p>
+      <p>Latency: {metrics.latency.toFixed(1)} ms</p>
+      <p>Throughput (Inbound): {metrics.throughput.inbound} msg/s</p>
+      <button onClick={() => publish('alerts', { text: 'Emergency Alert' })}>
+        Broadcast Alert
+      </button>
     </div>
   );
 }</code></pre>
       </section>
 
+      <section id="api-reference">
+        <h2>API Reference</h2>
+        
+        <h3>1. <code>RealtimeClient</code> Interface</h3>
+        <pre><code class="lang-typescript">class RealtimeClient&lt;TEvents = any&gt; extends EventEmitter {
+  constructor(config: RealtimeClientConfig);
+
+  /** Registers Koa-style middleware */
+  use(middleware: Middleware): this;
+
+  /** Gets aggregated connection state */
+  readonly state: ConnectionState;
+
+  /** Gets aggregated metrics */
+  readonly metrics: Metrics;
+
+  /** Subscribes to a topic (returns unsubscriber callback) */
+  subscribe&lt;K&gt;(topic: K, handler: (data: any) => void): Promise&lt;() => Promise&lt;void&gt;&gt;;
+  subscribe&lt;K&gt;(topic: K, options: SubscribeOptions, handler: (data: any) => void): Promise&lt;() => Promise&lt;void&gt;&gt;;
+
+  /** Publishes data to a topic */
+  publish&lt;K&gt;(topic: K, payload: any): Promise&lt;void&gt;;
+
+  /** Completely destroys the client and terminates all connections */
+  destroy(): Promise&lt;void&gt;;
+}</code></pre>
+
+        <h3>2. Configuration Types</h3>
+        
+        <h4><code>RealtimeClientConfig</code></h4>
+        <pre><code class="lang-typescript">interface RealtimeClientConfig {
+  transport: Transport;
+  connectionPolicy?: ConnectionPolicy; // 'shared' | 'isolated' | 'hybrid' | ((sub: Subscription) => string)
+  reconnectOptions?: ReconnectOptions;
+  heartbeatOptions?: HeartbeatOptions;
+  coordinator?: ICoordinator;
+  debug?: boolean;
+}</code></pre>
+
+        <h4><code>ReconnectOptions</code></h4>
+        <pre><code class="lang-typescript">interface ReconnectOptions {
+  maxAttempts?: number;           // Defaults to Infinity
+  delay?: number | ((attempt: number) => number); // exponential or fixed delay
+  timeout?: number;               // connection handshake timeout in ms
+  stableThreshold?: number;       // stability window in ms. Defaults to 5000ms
+}</code></pre>
+
+        <h4><code>HeartbeatOptions</code></h4>
+        <pre><code class="lang-typescript">interface HeartbeatOptions {
+  enabled?: boolean;              // Defaults to true
+  interval?: number;              // ping frequency in ms. Defaults to 30000ms
+  timeout?: number;               // pong timeout in ms. Defaults to 10000ms
+  message?: any;                  // custom heartbeat message payload
+}</code></pre>
+
+        <h4><code>Metrics</code></h4>
+        <pre><code class="lang-typescript">interface Metrics {
+  reconnectCount: number;         // accumulated reconnect attempts
+  latency: number;                // average round-trip-time (ping-pong RTT) in ms
+  uptime: number;                 // current connection uptime in ms
+  transportType: string;          // 'websocket' | 'sse' | 'polling'
+  connectionCount: number;        // number of active physical connections
+  activeSubscriptions: number;    // number of active subscriptions
+  leaderChanges: number;          // count of coordinator leader elections
+  throughput: {
+    inbound: number;              // incoming messages per second
+    outbound: number;             // outgoing messages per second
+  };
+}</code></pre>
+
+        <h3>3. Event Subscriptions</h3>
+        <p>The client inherits from an <code>EventEmitter</code> and fires the following events:</p>
+        <ul>
+          <li><code>'stateChange'</code>: Emitted when the aggregated connection state updates. Payload: <code>{ state: ConnectionState }</code>.</li>
+          <li><code>'metricsChange'</code>: Emitted periodically when connection stats are recalculated. Payload: <code>Metrics</code>.</li>
+        </ul>
+        <pre><code class="lang-typescript">client.on('stateChange', ({ state }) => {
+  console.log(`Connection state is now: ${state}`);
+});
+
+client.on('metricsChange', (metrics) => {
+  console.log(`Latency ping-pong: ${metrics.latency} ms`);
+});</code></pre>
+      </section>
+
       <section id="benchmarks">
         <h2>Benchmarks and Stress Tests</h2>
         <p>
-          `@connexis` is engineered for high-frequency message streams. Standard performance metrics captured on local environments include:
+          <code>@connexis</code> is engineered for high-frequency message streams. Standard performance metrics captured on local environments include:
         </p>
         <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0; text-align: left;">
           <thead>
